@@ -105,6 +105,8 @@ func main() {
     r.HandleFunc("/main", mainHandler).Methods("GET")
     r.HandleFunc("/download", downloadHandler).Methods("GET")
 
+    r.HandleFunc("/health", healthHandler).Methods("GET")
+
 
     log.Info("Starting Server at port ", config.Port)
     srv := &http.Server{

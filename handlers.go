@@ -249,3 +249,9 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/login", http.StatusFound)
 }
 
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+
+    w.WriteHeader(http.StatusOK)
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode("All Always Ok for Now, need to be improved")
+}
