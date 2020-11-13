@@ -9,7 +9,7 @@
   <body>
     <img src="{{ .Picture }}" alt="Profile Google Picture" width="64" height="64">
     <a href="/logout">logout</a>
-    <h1>Welcome to Talent Payrolling {{ .Email }}.</h1>
+    <h1>Welcome to S3 Web {{ .Email }}.</h1>
     <ul>
         {{ range .S3Objects }}
         <li><a href="/download?object={{ . }}" target="_blank">{{ . }}</a></li>

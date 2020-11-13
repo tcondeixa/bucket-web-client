@@ -77,7 +77,6 @@ func main() {
 		log.Error("Fail to parse Env variables", err)
 		os.Exit(1)
 	}
-	log.Info(config)
 
 	level, err := log.ParseLevel(config.Log)
 	if err != nil {

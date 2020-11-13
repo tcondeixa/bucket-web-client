@@ -121,18 +121,14 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 
 	if !token.Valid() {
 		log.Error("Failure in Authentication Middleware")
-		w.WriteHeader(http.StatusForbidden)
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode("Not Authenticated User")
+        http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
 
 	err, user := userInfoFromToken(&token)
 	if err != nil || user.EmailVerified == false {
 		log.Error(err)
-		w.WriteHeader(http.StatusForbidden)
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode("Not Authenticated User")
+        http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
 
