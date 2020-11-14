@@ -43,11 +43,17 @@ type EnvVars struct {
 
 type AuthRules struct {
 	AuthRules []AuthRule `json:"auth_rules"`
+	BucketNames []BucketNaming `json:"bucket_friendly_naming"`
 }
 
 type AuthRule struct {
 	Emails []string `json:"emails"`
 	Buckets []string `json:"buckets"`
+}
+
+type BucketNaming struct {
+	RealName string `json:"real_name"`
+	FriendlyName string `json:"friendly_name"`
 }
 
 

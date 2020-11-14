@@ -139,8 +139,7 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     vars := mux.Vars(r)
-    s3Bucket := vars["bucket"]
-    log.Info(s3Bucket)
+    s3Bucket = getRealBucketName(vars["bucket"])
 
     selectedBucketPos := 0
     firstBucketValue := verifiedBuckets[0]
@@ -174,6 +173,8 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    s3Bucket = getFriendlyBucketName(s3Bucket)
+    verifiedBuckets = changeRealToFriendlyBuckets(verifiedBuckets)
     tmpl := template.Must(template.ParseFiles("templates/bucket.tmpl"))
     templateData := replyObjects {
         Email: user.Email,

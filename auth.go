@@ -94,3 +94,37 @@ func checkUserAuthBucket(userEmail string, userBucket string) (bool) {
 
     return false
 }
+
+
+func getRealBucketName(friendlyName string) string {
+
+    for _,bucket := range authRules.BucketNames {
+        if bucket.FriendlyName == friendlyName {
+            return bucket.RealName
+        }
+    }
+
+    return friendlyName
+}
+
+func getFriendlyBucketName(realName string) string {
+
+    for _,bucket := range authRules.BucketNames {
+        if bucket.RealName == realName {
+            return bucket.FriendlyName
+        }
+    }
+
+    return realName
+}
+
+func changeRealToFriendlyBuckets (realName []string) []string {
+
+    var buckets []string
+
+    for _,bucket := range realName {
+        buckets = append(buckets, getFriendlyBucketName(bucket))
+    }
+
+    return buckets
+}
