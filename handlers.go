@@ -139,7 +139,7 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     vars := mux.Vars(r)
-    s3Bucket = getRealBucketName(vars["bucket"])
+    s3Bucket := getRealBucketName(vars["bucket"])
 
     selectedBucketPos := 0
     firstBucketValue := verifiedBuckets[0]
