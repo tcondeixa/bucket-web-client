@@ -95,7 +95,6 @@ func checkUserAuthBucket(userEmail string, userBucket string) (bool) {
     return false
 }
 
-
 func getRealBucketName(friendlyName string) string {
 
     for _,bucket := range authRules.BucketNames {

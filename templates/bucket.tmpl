@@ -10,16 +10,15 @@
 </head>
 <body>
     <div class="welcome">
-        <h1 align="left">
+        <h1>
             <img src="{{ .Picture }}" alt="Profile Google Picture" width="64" height="64">
         </h1>
-        <h1 align="center">S3 Web Service</h1>
-        <h1 align="right">
-            <tiny>{{ .Email }}</tiny>
-            <small><a href="/logout">logout</a></small>
+        <h1>S3 Web Service</h1>
+        <h1>
+            <p>{{ .Email }}</p>
+            <p><a href="/logout">logout</a></p>
         </h1>
     </div>
-
 
     <aside>
         <form>
@@ -33,7 +32,7 @@
     <section>
         {{$bucket := .S3Bucket}}
         {{ range .S3Objects }}
-        <p><a href="/main/{{ $bucket }}?object={{ . }}" target="_blank">{{ . }}</a></p>
+        <p style="font-size:12px"><a href="/main/{{ $bucket }}?object={{ . }}" target="_blank">{{ . }}</a></p>
         {{ end }}
     </section>
 <footer>

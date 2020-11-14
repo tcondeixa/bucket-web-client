@@ -15,60 +15,68 @@ button {
 
 
 body {
-  font-family: "Lucida Grande", sans-serif;
-  background: #1c1a1a;
-  margin: 0;
-}
-
-section {
-  width: 80%;
-  margin-left: 2rem;
-  margin-top: 2rem;
-  margin-bottom: 10rem;
-}
-
-footer {
-  color: white;
-  text-align: center;
-  padding-bottom: 1rem;
-}
-
-.welcome {
-  margin: 2rem 0 2rem 2rem;
-  display: flex;
-  flex-wrap: wrap;
-}
-
-h1 {
-  display: inline-block;
-  margin-right: 100px;
-  color: #4CAF50;
-}
-
-.bucket-picker {
-  font-family: "Lucida Grande", sans-serif;
-  font-size: 1rem;
-  text-transform: capitalize;
-  margin-left: 2rem;
-}
-
-p {
-  margin-top: 1rem;
+    font-family: "Lucida Grande", sans-serif;
+    background: #1c1a1a;
 }
 
 img {
-  height: 100px;
-  width: 100px;
+    height: 80px;
+    width: 80px;
+}
+
+.welcome {
+    width: auto;
+    height: auto;
+    margin: 2rem 2rem 2rem 2rem;
+}
+
+h1 {
+    display: inline-block;
+    color: #4CAF50;
+}
+
+form {
+    margin-top: 3rem;
+    margin-bottom: 1rem;
+}
+
+section {
+    width: auto;
+    height: auto;
+    margin-left: 2rem;
+    margin-right: 2rem;
+    margin-bottom: 5rem;
+    background-color: #111111;
+    border: 1px solid grey;
+}
+
+.bucket-picker {
+    font-family: "Lucida Grande", sans-serif;
+    font-size: 1rem;
+    margin-left: 2rem;
+}
+
+p {
+    margin-top: 1rem;
+    margin-left: 1rem;
+    margin-right: 1rem;
+    font-size: 15px;
 }
 
 a:hover {
-  opacity: 0.7;
+    opacity: 0.7;
 }
 
 a:link {
-  color: white;
+    color: white;
 }
 
 a:visited {
-  color: grey;
+    color: grey;
+}
+
+footer {
+    color: white;
+    text-align: center;
+    padding-bottom: 1rem;
 }

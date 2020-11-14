@@ -43,23 +43,23 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 	token, err := oauthConf.Exchange(oauth2.NoContext, code)
 	if err != nil {
 		log.Error(err)
-		return
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	if !token.Valid() {
-		fmt.Fprintf(w, "Fail on Oauth authentication")
-		return
+		log.Error("Fail on Oauth authentication")
+		http.Redirect(w, r, "/login", http.StatusFound)
 	}
 
 	err, user := userInfoFromToken(token)
 	if err != nil || user.EmailVerified == false {
 		log.Error(err)
         http.Redirect(w, r, "/login", http.StatusFound)
-		return
 	}
 
     isAllowed := checkUserAuth(user.Email)
     if isAllowed == false {
+        log.Info("unauthorised user trying to access", user.Email)
         http.Redirect(w, r, "/login", http.StatusFound)
     }
 
@@ -68,12 +68,11 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 	err = session.Save(r, w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
 
     err, sess := AwsSessionCreate("terraform","eu-central-1")
     if err != nil {
-        return
+        http.Error(w, err.Error(), http.StatusInternalServerError)
     }
 
     var verifiedBucket string
@@ -91,8 +90,11 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
         }
     }
 
-    redirect := "/main/"+verifiedBucket
-    http.Redirect(w, r, redirect, http.StatusFound)
+    if verifiedBucket == "" {
+        http.Redirect(w, r, "/login", http.StatusFound)
+    }
+
+    http.Redirect(w, r, "/main/"+verifiedBucket, http.StatusFound)
 }
 
 func bucketHandler(w http.ResponseWriter, r *http.Request) {
@@ -100,6 +102,7 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := store.Get(r, sessionTokenName)
 	if err != nil {
 		log.Error(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	token := oauth2.Token{
@@ -109,33 +112,25 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
 	if !token.Valid() {
 		log.Error("Failure in Token Validation")
         http.Redirect(w, r, "/login", http.StatusFound)
-		return
 	}
 
 	err, user := userInfoFromToken(&token)
 	if err != nil || user.EmailVerified == false {
 		log.Error(err)
         http.Redirect(w, r, "/login", http.StatusFound)
-		return
 	}
 
     err, sess := AwsSessionCreate("terraform","eu-central-1")
     if err != nil {
-        return
+        log.Error(err)
+        http.Error(w, err.Error(), http.StatusInternalServerError)
     }
 
-    var verifiedBuckets []string
     allowedBuckets := getListBucketUser(user.Email)
-    for _,bucket := range allowedBuckets {
-        err, exist := AwsCheckBucketExist(sess, bucket)
-        if err != nil {
-            log.Error(err)
-            continue
-        }
+    err, verifiedBuckets := checkAllBuckets(sess, allowedBuckets)
 
-        if exist == true {
-            verifiedBuckets = append(verifiedBuckets, bucket)
-        }
+    if err != nil {
+        log.Warn("At least one configured bucket is not there ", err)
     }
 
     vars := mux.Vars(r)
@@ -155,6 +150,7 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
 
     isAllowed := checkUserAuthBucket(user.Email,s3Bucket)
     if isAllowed == false {
+        log.Info("unauthorised user trying to access", user.Email)
         http.Redirect(w, r, "/main", http.StatusFound)
     }
 
@@ -162,7 +158,8 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
     if s3Object != "" {
         err, presignUrl := AwsS3PresignObjectGet(sess, s3Bucket, s3Object)
         if err != nil {
-            return
+            log.Error(err)
+            http.Error(w, err.Error(), http.StatusInternalServerError)
         }
 
         http.Redirect(w, r, presignUrl, http.StatusFound)
@@ -170,7 +167,8 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
 
     err, objectsList := AwsS3BucketList(sess, s3Bucket)
     if err != nil {
-        return
+        log.Error(err)
+        http.Error(w, err.Error(), http.StatusInternalServerError)
     }
 
     s3Bucket = getFriendlyBucketName(s3Bucket)
@@ -190,8 +188,8 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := store.Get(r, sessionTokenName)
 	if err != nil {
+	    log.Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
 
 	session.Values["testing"] = ""
@@ -199,14 +197,13 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = session.Save(r, w)
 	if err != nil {
+	    log.Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
 	http.Redirect(w, r, "/login", http.StatusFound)
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
-
     w.WriteHeader(http.StatusOK)
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode("All Always Ok for Now, need to be improved")

@@ -95,3 +95,23 @@ func AwsCheckBucketExist(sess *session.Session, bucketName string) (error, bool)
 
     return err, true
 }
+
+
+func checkAllBuckets(sess *session.Session, buckets []string) (error, []string) {
+
+   var verifiedBuckets []string
+   var bucketProblems error
+   for _,bucket := range buckets {
+        err, exist := AwsCheckBucketExist(sess, bucket)
+        if err != nil {
+            bucketProblems = err
+            continue
+        }
+
+        if exist == true {
+            verifiedBuckets = append(verifiedBuckets, bucket)
+        }
+   }
+
+   return bucketProblems, verifiedBuckets
+}
