@@ -126,7 +126,6 @@ func main() {
 
     r := mux.NewRouter()
     r.PathPrefix("/css").Handler(http.StripPrefix("/css", http.FileServer(http.Dir("./static/css"))))
-    r.PathPrefix("/img").Handler(http.StripPrefix("/img", http.FileServer(http.Dir("./static/img"))))
     r.PathPrefix("/js").Handler(http.StripPrefix("/js", http.FileServer(http.Dir("./static/js"))))
     r.HandleFunc("/login", loginHandler).Methods("GET")
     r.HandleFunc("/logout", logoutHandler).Methods("GET")
