@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"time"
 )
 
@@ -44,6 +45,7 @@ func AwsS3BucketList(sess *session.Session, bucketName string) (error, []string)
 func AwsS3BucketGet(sess *session.Session, bucketName string, bucketKey string) (error, []byte) {
 
 	buf := aws.NewWriteAtBuffer([]byte{})
+
 	downloader := s3manager.NewDownloader(sess)
 	_, err := downloader.Download(buf, &s3.GetObjectInput{
 		Bucket: aws.String(bucketName),
@@ -72,4 +74,24 @@ func AwsS3PresignObjectGet(sess *session.Session, bucketName string, bucketKey s
 
     return err, urlStr
 
+}
+
+func AwsCheckBucketExist(sess *session.Session, bucketName string) (error, bool) {
+
+    svc := s3.New(sess)
+
+    _, err := svc.HeadBucket(&s3.HeadBucketInput{
+        Bucket: &bucketName,
+    })
+
+    if err != nil {
+        aerr, ok := err.(awserr.Error)
+        if (ok && aerr.Code() == s3.ErrCodeNoSuchBucket || aerr.Code() == "NotFound") {
+            return nil, false
+        }
+
+        return err, false
+    }
+
+    return err, true
 }
