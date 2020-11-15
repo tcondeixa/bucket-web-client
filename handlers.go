@@ -13,6 +13,7 @@ import (
 
 
 type replyObjects struct {
+	Title string
 	Email string
 	Picture string
 	S3Buckets []string
@@ -190,6 +191,7 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
     tmpl := template.Must(template.ParseFiles("templates/bucket.tmpl"))
     log.Trace("")
     templateData := replyObjects {
+        Title: config.Title,
         Email: user.Email,
         Picture: user.Picture,
         S3Buckets: allowedBuckets,

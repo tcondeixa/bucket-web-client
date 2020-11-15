@@ -25,6 +25,8 @@ Defaults to info.
 
 `PORT`: Port to be used by the App. Defaults to "8080".
 
+`TITLE`: Title of the web page. Defaults to "S3 Web Service".
+
 `CLIENT_ID`: Client ID from google Oauth integration. Mandatory.
 
 `CLIENT_SECRET`: Client secret from google Oauth integration. Mandatory.

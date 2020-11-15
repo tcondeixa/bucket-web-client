@@ -34,7 +34,7 @@ type EnvVars struct {
 	Host			string `default:"0.0.0.0" envconfig:"HOST"`
 	Port			string `default:"8080" envconfig:"PORT"`
 	Log     		string `default:"Info"  envconfig:"LOG_LEVEL"`
-	CookiesHashKey	string `default:"" envconfig:"COOKIES_HASH_KEY"`
+	Title	        string `default:"S3 Web Service" envconfig:"TITLE"`
 	ClientID    	string `required:"true" envconfig:"CLIENT_ID"`
 	ClientSecret	string `required:"true" envconfig:"CLIENT_SECRET"`
 	RedirectURL     string `required:"true" envconfig:"REDIRECT_URL"`
@@ -145,7 +145,7 @@ func main() {
     log.SetLevel(level)
     log.Info("Log level set to ", level)
 
-    config.CookiesHashKey, err = GenerateRandomString(64)
+    cookiesHashKey, err := GenerateRandomString(64)
     if err != nil {
         log.Error(err)
         os.Exit(1)
@@ -170,8 +170,8 @@ func main() {
     sessionTokenName = "s3-web-client-token"
 
 	authInit(config.ClientID, config.ClientSecret, config.RedirectURL)
-	secureCookie = securecookie.New([]byte(config.CookiesHashKey), nil)
-	store = sessions.NewCookieStore([]byte(config.CookiesHashKey))
+	secureCookie = securecookie.New([]byte(cookiesHashKey), nil)
+	store = sessions.NewCookieStore([]byte(cookiesHashKey))
 	store.Options = &sessions.Options{
 		MaxAge:   60 * 15, // 15 min
 		HttpOnly: true,

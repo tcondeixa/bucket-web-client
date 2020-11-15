@@ -4,7 +4,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"time"
 )
@@ -28,11 +27,13 @@ func AwsS3BucketList(sess *session.Session, bucketName string) (error, []string)
 
 	svc := s3.New(sess)
 	err := svc.ListObjectsPages(&s3.ListObjectsInput{
-		Bucket: &bucketName,
+		Bucket: aws.String(bucketName),
 	}, func(p *s3.ListObjectsOutput, last bool) (shouldContinue bool) {
-		for _, obj := range p.Contents {
-			objectsList = append(objectsList, *obj.Key)
+	    objectsListPage := make([]string, len(p.Contents))
+		for i, obj := range p.Contents {
+			objectsListPage[i] = *obj.Key
 		}
+		objectsList = append(objectsList, objectsListPage...)
 		return !last
 	})
 	if err != nil {
@@ -42,29 +43,13 @@ func AwsS3BucketList(sess *session.Session, bucketName string) (error, []string)
 	return err, objectsList
 }
 
-func AwsS3BucketGet(sess *session.Session, bucketName string, bucketKey string) (error, []byte) {
-
-	buf := aws.NewWriteAtBuffer([]byte{})
-
-	downloader := s3manager.NewDownloader(sess)
-	_, err := downloader.Download(buf, &s3.GetObjectInput{
-		Bucket: aws.String(bucketName),
-		Key:    aws.String(bucketKey),
-	})
-	if err != nil {
-		return err, []byte{}
-	}
-
-	return err, buf.Bytes()
-}
-
 func AwsS3PresignObjectGet(sess *session.Session, bucketName string, bucketKey string) (error, string) {
 
     svc := s3.New(sess)
 
     req, _ := svc.GetObjectRequest(&s3.GetObjectInput{
-        Bucket: &bucketName,
-        Key:    &bucketKey,
+        Bucket: aws.String(bucketName),
+        Key:    aws.String(bucketKey),
     })
 
     urlStr, err := req.Presign(15 * time.Minute)
@@ -81,7 +66,7 @@ func AwsCheckBucketExist(sess *session.Session, bucketName string) (error, bool)
     svc := s3.New(sess)
 
     _, err := svc.HeadBucket(&s3.HeadBucketInput{
-        Bucket: &bucketName,
+        Bucket: aws.String(bucketName),
     })
 
     if err != nil {
