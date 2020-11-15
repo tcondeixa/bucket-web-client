@@ -1,6 +1,6 @@
 #!/bin/bash -xe
 
-VERSION=v0.4
+VERSION=v0.5
 ACCOUNT=tscondeixa
 REPO=s3-web-client
 

@@ -8,13 +8,9 @@ import (
 	"time"
 )
 
-func AwsSessionCreate(profile, region string) (error, *session.Session) {
+func AwsSessionCreate() (error, *session.Session) {
 
 	sess, err := session.NewSessionWithOptions(session.Options{
-		Profile: profile,
-		Config: aws.Config{
-			Region: aws.String(region),
-		},
 		SharedConfigState: session.SharedConfigEnable,
 	})
 

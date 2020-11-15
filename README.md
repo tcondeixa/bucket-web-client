@@ -14,6 +14,12 @@ The service needs AWS IAM permissions to access the S3 buckets, and they will be
 2. Shared credentials file.
 3. IAM role.
 
+ALL `AWS_` env variables can be used to change configurations and credentials, such as region and profile. 
+
+The credentials provided need to allow:
+- ListBucket
+- GetObject
+
 
 ### Environmental Variables:
 
@@ -32,6 +38,8 @@ Defaults to info.
 `CLIENT_SECRET`: Client secret from google Oauth integration. Mandatory.
 
 `REDIRECT_URL`: Oauth callback url. Mandatory.
+
+`COOKIE_HASH_KEY`: Hash key string to encrypt the cookie. Mandatory.
 
 `AUTH_FILE`: The path to the json file with authorisation rules and bucket naming. Mandatory.
 

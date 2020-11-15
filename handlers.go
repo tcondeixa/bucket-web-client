@@ -77,7 +77,7 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
     log.Trace("")
-    err, sess := AwsSessionCreate("terraform","eu-central-1")
+    err, sess := AwsSessionCreate()
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
     }
@@ -134,7 +134,7 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
     log.Trace("")
-    err, sess := AwsSessionCreate("terraform","eu-central-1")
+    err, sess := AwsSessionCreate()
     if err != nil {
         log.Error(err)
         http.Error(w, err.Error(), http.StatusInternalServerError)

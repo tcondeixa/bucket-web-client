@@ -18,7 +18,6 @@ import (
   	"encoding/json"
   	"io/ioutil"
   	"sort"
-  	"crypto/rand"
 )
 
 
@@ -38,6 +37,7 @@ type EnvVars struct {
 	ClientID    	string `required:"true" envconfig:"CLIENT_ID"`
 	ClientSecret	string `required:"true" envconfig:"CLIENT_SECRET"`
 	RedirectURL     string `required:"true" envconfig:"REDIRECT_URL"`
+	CookieHashKey   string `required:"true" envconfig:"COOKIE_HASH_KEY"`
 	AuthFile        string `required:"true" envconfig:"AUTH_FILE"`
 }
 
@@ -82,7 +82,7 @@ func authInit (ClientID, ClientSecret, RedirectUrl string) {
 
 func sortAndValidateAuthRules (authRules []AuthRule) (bool) {
 
-    err, sess := AwsSessionCreate("terraform","eu-central-1")
+    err, sess := AwsSessionCreate()
     if err != nil {
         log.Error(err)
         return false
@@ -101,30 +101,6 @@ func sortAndValidateAuthRules (authRules []AuthRule) (bool) {
     return true
 }
 
-func GenerateRandomBytes(n int) ([]byte, error) {
-	b := make([]byte, n)
-	_, err := rand.Read(b)
-	// Note that err == nil only if we read len(b) bytes.
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
-}
-
-func GenerateRandomString(n int) (string, error) {
-	const letters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-"
-	bytes, err := GenerateRandomBytes(n)
-	if err != nil {
-		return "", err
-	}
-	for i, b := range bytes {
-		bytes[i] = letters[b%byte(len(letters))]
-	}
-
-	return string(bytes), nil
-}
-
 
 func main() {
 
@@ -132,7 +108,7 @@ func main() {
 
 	err := envconfig.Process("", &config)
 	if err != nil {
-		log.Error("Fail to parse Env variables", err)
+		log.Error("Fail to parse Env variables, ", err)
 		os.Exit(1)
 	}
 
@@ -145,16 +121,10 @@ func main() {
     log.SetLevel(level)
     log.Info("Log level set to ", level)
 
-    cookiesHashKey, err := GenerateRandomString(64)
-    if err != nil {
-        log.Error(err)
-        os.Exit(1)
-    }
-
 	jsonFile, err := os.Open(config.AuthFile)
 	defer jsonFile.Close()
     if err != nil {
-        log.Error("Fail to parse Auth file", err)
+        log.Error("Fail to parse Auth file ", err)
         os.Exit(1)
     }
 
@@ -162,7 +132,7 @@ func main() {
     json.Unmarshal(byteValue, &authRules)
     valid := sortAndValidateAuthRules(authRules.AuthRules)
     if !valid {
-        log.Error("Fail to reach buckets", err)
+        log.Error("Fail to reach buckets ", err)
         os.Exit(1)
     }
 
@@ -170,8 +140,8 @@ func main() {
     sessionTokenName = "s3-web-client-token"
 
 	authInit(config.ClientID, config.ClientSecret, config.RedirectURL)
-	secureCookie = securecookie.New([]byte(cookiesHashKey), nil)
-	store = sessions.NewCookieStore([]byte(cookiesHashKey))
+	secureCookie = securecookie.New([]byte(config.CookieHashKey), nil)
+	store = sessions.NewCookieStore([]byte(config.CookieHashKey))
 	store.Options = &sessions.Options{
 		MaxAge:   60 * 15, // 15 min
 		HttpOnly: true,
