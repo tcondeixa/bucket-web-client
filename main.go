@@ -18,6 +18,7 @@ import (
   	"encoding/json"
   	"io/ioutil"
   	"sort"
+  	"crypto/rand"
 )
 
 
@@ -32,13 +33,12 @@ var sessionTokenName string
 type EnvVars struct {
 	Host			string `default:"0.0.0.0" envconfig:"HOST"`
 	Port			string `default:"8080" envconfig:"PORT"`
-	Service 		string `default:"Payrolling" envconfig:"SERVICE"`
 	Log     		string `default:"Info"  envconfig:"LOG_LEVEL"`
-	CookiesHashKey	string 	`required:"true" envconfig:"COOKIES_HASH_KEY"`
-	ClientID    	string  `required:"true" envconfig:"CLIENT_ID"`
-	ClientSecret	string  `required:"true" envconfig:"CLIENT_SECRET"`
-	RedirectURL     string  `required:"true" envconfig:"REDIRECT_URL"`
-	AuthFile        string  `required:"true" envconfig:"AUTH_FILE"`
+	CookiesHashKey	string `default:"" envconfig:"COOKIES_HASH_KEY"`
+	ClientID    	string `required:"true" envconfig:"CLIENT_ID"`
+	ClientSecret	string `required:"true" envconfig:"CLIENT_SECRET"`
+	RedirectURL     string `required:"true" envconfig:"REDIRECT_URL"`
+	AuthFile        string `required:"true" envconfig:"AUTH_FILE"`
 }
 
 type AuthRules struct {
@@ -80,6 +80,51 @@ func authInit (ClientID, ClientSecret, RedirectUrl string) {
 	}
 }
 
+func sortAndValidateAuthRules (authRules []AuthRule) (bool) {
+
+    err, sess := AwsSessionCreate("terraform","eu-central-1")
+    if err != nil {
+        log.Error(err)
+        return false
+    }
+
+    for _,rule := range authRules {
+        sort.Strings(rule.Emails)
+        sort.Strings(rule.Buckets)
+        err, _ := checkAllBuckets(sess, rule.Buckets)
+        if err != nil {
+            log.Error("Please check if all buckets in auth_rules exists and app has access")
+            return false
+        }
+    }
+
+    return true
+}
+
+func GenerateRandomBytes(n int) ([]byte, error) {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	// Note that err == nil only if we read len(b) bytes.
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
+func GenerateRandomString(n int) (string, error) {
+	const letters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-"
+	bytes, err := GenerateRandomBytes(n)
+	if err != nil {
+		return "", err
+	}
+	for i, b := range bytes {
+		bytes[i] = letters[b%byte(len(letters))]
+	}
+
+	return string(bytes), nil
+}
+
 
 func main() {
 
@@ -93,8 +138,18 @@ func main() {
 
 	level, err := log.ParseLevel(config.Log)
 	if err != nil {
-		log.SetLevel(level)
+        log.Error(err)
+        os.Exit(1)
 	}
+
+    log.SetLevel(level)
+    log.Info("Log level set to ", level)
+
+    config.CookiesHashKey, err = GenerateRandomString(64)
+    if err != nil {
+        log.Error(err)
+        os.Exit(1)
+    }
 
 	jsonFile, err := os.Open(config.AuthFile)
 	defer jsonFile.Close()
@@ -105,10 +160,12 @@ func main() {
 
     byteValue, _ := ioutil.ReadAll(jsonFile)
     json.Unmarshal(byteValue, &authRules)
-    for _,rule := range authRules.AuthRules {
-        sort.Strings(rule.Emails)
-        sort.Strings(rule.Buckets)
+    valid := sortAndValidateAuthRules(authRules.AuthRules)
+    if !valid {
+        log.Error("Fail to reach buckets", err)
+        os.Exit(1)
     }
+
     log.Info(authRules)
     sessionTokenName = "s3-web-client-token"
 

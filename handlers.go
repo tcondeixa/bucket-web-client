@@ -34,35 +34,40 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	templateData := map[string]interface{}{
 		"link": url,
 	}
-	tmpl.ExecuteTemplate(w, "login.tmpl", templateData)
+	tmpl.ExecuteTemplate(w, "login.tmpl", &templateData)
 }
 
 func authHandler(w http.ResponseWriter, r *http.Request) {
 	code := r.FormValue("code")
 
+    log.Trace("")
 	token, err := oauthConf.Exchange(oauth2.NoContext, code)
 	if err != nil {
 		log.Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
+    log.Trace("")
 	if !token.Valid() {
 		log.Error("Fail on Oauth authentication")
 		http.Redirect(w, r, "/login", http.StatusFound)
 	}
 
+    log.Trace("")
 	err, user := userInfoFromToken(token)
 	if err != nil || user.EmailVerified == false {
 		log.Error(err)
         http.Redirect(w, r, "/login", http.StatusFound)
 	}
 
+    log.Trace("")
     isAllowed := checkUserAuth(user.Email)
     if isAllowed == false {
         log.Info("unauthorised user trying to access", user.Email)
         http.Redirect(w, r, "/login", http.StatusFound)
     }
 
+    log.Trace("")
 	session, _ := store.Get(r, sessionTokenName)
 	session.Values["oauth"] = token.AccessToken
 	err = session.Save(r, w)
@@ -70,13 +75,16 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
+    log.Trace("")
     err, sess := AwsSessionCreate("terraform","eu-central-1")
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
     }
 
+    log.Trace("")
     var verifiedBucket string
     allowedBuckets := getListBucketUser(user.Email)
+    log.Trace("")
     for _,bucket := range allowedBuckets {
         err, exist := AwsCheckBucketExist(sess, bucket)
         if err != nil {
@@ -90,6 +98,7 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
         }
     }
 
+    log.Trace("")
     if verifiedBucket == "" {
         http.Redirect(w, r, "/login", http.StatusFound)
     }
@@ -105,55 +114,57 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
+    log.Trace("")
 	token := oauth2.Token{
 		AccessToken: fmt.Sprintf("%v", session.Values["oauth"]),
 	}
 
+    log.Trace("")
 	if !token.Valid() {
 		log.Error("Failure in Token Validation")
         http.Redirect(w, r, "/login", http.StatusFound)
 	}
 
+    log.Trace("")
 	err, user := userInfoFromToken(&token)
 	if err != nil || user.EmailVerified == false {
 		log.Error(err)
         http.Redirect(w, r, "/login", http.StatusFound)
 	}
 
+    log.Trace("")
     err, sess := AwsSessionCreate("terraform","eu-central-1")
     if err != nil {
         log.Error(err)
         http.Error(w, err.Error(), http.StatusInternalServerError)
     }
 
+    log.Trace("")
     allowedBuckets := getListBucketUser(user.Email)
-    err, verifiedBuckets := checkAllBuckets(sess, allowedBuckets)
 
-    if err != nil {
-        log.Warn("At least one configured bucket is not there ", err)
-    }
-
+    log.Trace("")
     vars := mux.Vars(r)
     s3Bucket := getRealBucketName(vars["bucket"])
 
     selectedBucketPos := 0
-    firstBucketValue := verifiedBuckets[0]
-    for index,bucket := range verifiedBuckets {
+    firstBucketValue := allowedBuckets[0]
+    for index,bucket := range allowedBuckets {
         if bucket == s3Bucket {
             selectedBucketPos = index
             break
         }
     }
-    verifiedBuckets[0] = s3Bucket
-    verifiedBuckets[selectedBucketPos] = firstBucketValue
+    allowedBuckets[0] = s3Bucket
+    allowedBuckets[selectedBucketPos] = firstBucketValue
 
-
+    log.Trace("")
     isAllowed := checkUserAuthBucket(user.Email,s3Bucket)
     if isAllowed == false {
         log.Info("unauthorised user trying to access", user.Email)
         http.Redirect(w, r, "/main", http.StatusFound)
     }
 
+    log.Trace("")
     s3Object := r.URL.Query().Get("object")
     if s3Object != "" {
         err, presignUrl := AwsS3PresignObjectGet(sess, s3Bucket, s3Object)
@@ -165,24 +176,28 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
         http.Redirect(w, r, presignUrl, http.StatusFound)
     }
 
+    log.Trace("")
     err, objectsList := AwsS3BucketList(sess, s3Bucket)
     if err != nil {
         log.Error(err)
         http.Error(w, err.Error(), http.StatusInternalServerError)
     }
 
+    log.Trace("")
     s3Bucket = getFriendlyBucketName(s3Bucket)
-    verifiedBuckets = changeRealToFriendlyBuckets(verifiedBuckets)
+    allowedBuckets = changeRealToFriendlyBuckets(allowedBuckets)
+    log.Trace("")
     tmpl := template.Must(template.ParseFiles("templates/bucket.tmpl"))
+    log.Trace("")
     templateData := replyObjects {
         Email: user.Email,
         Picture: user.Picture,
-        S3Buckets: verifiedBuckets,
+        S3Buckets: allowedBuckets,
         S3Bucket: s3Bucket,
         S3Objects: objectsList,
     }
 
-    tmpl.ExecuteTemplate(w, "bucket.tmpl", templateData)
+    tmpl.ExecuteTemplate(w, "bucket.tmpl", &templateData)
 }
 
 func logoutHandler(w http.ResponseWriter, r *http.Request) {

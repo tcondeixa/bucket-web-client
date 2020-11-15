@@ -21,11 +21,13 @@ The service needs AWS IAM permissions to access the S3 buckets, and they will be
 \[**trace**, **debug**, **info**, **warning**, **error**, **fatal**, **panic**\].
 Defaults to info.
 
+`HOST`: Address to be used by the App. Defaults to "0.0.0.0".
+
+`PORT`: Port to be used by the App. Defaults to "8080".
+
 `CLIENT_ID`: Client ID from google Oauth integration. Mandatory.
 
 `CLIENT_SECRET`: Client secret from google Oauth integration. Mandatory.
-
-`COOKIES_HASH_KEY`: Hash to apply in cookie encryption. Default to a random 64 characters string.
 
 `REDIRECT_URL`: Oauth callback url. Mandatory.
 
