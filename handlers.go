@@ -45,13 +45,15 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 	token, err := oauthConf.Exchange(oauth2.NoContext, code)
 	if err != nil {
 		log.Error(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
 	}
 
     log.Trace("")
 	if !token.Valid() {
 		log.Error("Fail on Oauth authentication")
 		http.Redirect(w, r, "/login", http.StatusFound)
+		return
 	}
 
     log.Trace("")
@@ -59,6 +61,7 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil || user.EmailVerified == false {
 		log.Error(err)
         http.Redirect(w, r, "/login", http.StatusFound)
+        return
 	}
 
     log.Trace("")
@@ -66,6 +69,7 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
     if isAllowed == false {
         log.Info("unauthorised user trying to access", user.Email)
         http.Redirect(w, r, "/login", http.StatusFound)
+        return
     }
 
     log.Trace("")
@@ -73,13 +77,17 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 	session.Values["oauth"] = token.AccessToken
 	err = session.Save(r, w)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	    log.Error(err)
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
 	}
 
     log.Trace("")
     err, sess := AwsSessionCreate()
     if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        log.Error(err)
+        http.Redirect(w, r, "/login", http.StatusFound)
+        return
     }
 
     log.Trace("")
@@ -102,6 +110,7 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
     log.Trace("")
     if verifiedBucket == "" {
         http.Redirect(w, r, "/login", http.StatusFound)
+        return
     }
 
     http.Redirect(w, r, "/main/"+verifiedBucket, http.StatusFound)
@@ -112,7 +121,8 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := store.Get(r, sessionTokenName)
 	if err != nil {
 		log.Error(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
 	}
 
     log.Trace("")
@@ -124,6 +134,7 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
 	if !token.Valid() {
 		log.Error("Failure in Token Validation")
         http.Redirect(w, r, "/login", http.StatusFound)
+        return
 	}
 
     log.Trace("")
@@ -131,13 +142,15 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil || user.EmailVerified == false {
 		log.Error(err)
         http.Redirect(w, r, "/login", http.StatusFound)
+        return
 	}
 
     log.Trace("")
     err, sess := AwsSessionCreate()
     if err != nil {
         log.Error(err)
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        http.Redirect(w, r, "/login", http.StatusFound)
+        return
     }
 
     log.Trace("")
@@ -162,7 +175,8 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
     isAllowed := checkUserAuthBucket(user.Email,s3Bucket)
     if isAllowed == false {
         log.Info("unauthorised user trying to access", user.Email)
-        http.Redirect(w, r, "/main", http.StatusFound)
+        http.Redirect(w, r, "/login", http.StatusFound)
+        return
     }
 
     log.Trace("")
@@ -171,17 +185,21 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
         err, presignUrl := AwsS3PresignObjectGet(sess, s3Bucket, s3Object)
         if err != nil {
             log.Error(err)
-            http.Error(w, err.Error(), http.StatusInternalServerError)
+            http.Redirect(w, r, "/login", http.StatusFound)
+            return
         }
 
+        log.Trace("")
         http.Redirect(w, r, presignUrl, http.StatusFound)
+        return
     }
 
     log.Trace("")
     err, objectsList := AwsS3BucketList(sess, s3Bucket)
     if err != nil {
         log.Error(err)
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        http.Redirect(w, r, "/login", http.StatusFound)
+        return
     }
 
     log.Trace("")
@@ -206,7 +224,8 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := store.Get(r, sessionTokenName)
 	if err != nil {
 	    log.Error(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
 	}
 
 	session.Values["testing"] = ""
@@ -215,7 +234,8 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	err = session.Save(r, w)
 	if err != nil {
 	    log.Error(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
 	}
 	http.Redirect(w, r, "/login", http.StatusFound)
 }
