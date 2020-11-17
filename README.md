@@ -39,8 +39,6 @@ Defaults to info.
 
 `REDIRECT_URL`: Oauth callback url. Mandatory.
 
-`COOKIE_HASH_KEY`: Hash key string to encrypt the cookie. Mandatory.
-
 `AUTH_FILE`: The path to the json file with authorisation rules and bucket naming. Mandatory.
 
 

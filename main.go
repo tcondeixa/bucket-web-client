@@ -8,8 +8,8 @@ import (
   	log "github.com/sirupsen/logrus"
   	"golang.org/x/oauth2"
   	"golang.org/x/oauth2/google"
-  	"github.com/gorilla/securecookie"
   	"github.com/gorilla/sessions"
+  	"github.com/gorilla/securecookie"
   	"net/http"
   	"os"
   	"fmt"
@@ -23,8 +23,9 @@ import (
 
 var config EnvVars
 var authRules AuthRules
+
 var oauthConf *oauth2.Config
-var secureCookie *securecookie.SecureCookie
+
 var store *sessions.CookieStore
 var sessionTokenName string
 
@@ -37,7 +38,6 @@ type EnvVars struct {
 	ClientID    	string `required:"true" envconfig:"CLIENT_ID"`
 	ClientSecret	string `required:"true" envconfig:"CLIENT_SECRET"`
 	RedirectURL     string `required:"true" envconfig:"REDIRECT_URL"`
-	CookieHashKey   string `required:"true" envconfig:"COOKIE_HASH_KEY"`
 	AuthFile        string `required:"true" envconfig:"AUTH_FILE"`
 }
 
@@ -79,6 +79,9 @@ func authInit (ClientID, ClientSecret, RedirectUrl string) {
 		Endpoint: google.Endpoint,
 	}
 }
+
+//"https://www.googleapis.com/auth/admin.directory.group.readonly",
+//"https://www.googleapis.com/auth/admin.directory.group.member.readonly",
 
 func sortAndValidateAuthRules (authRules []AuthRule) (bool) {
 
@@ -138,13 +141,12 @@ func main() {
 
     log.Info(authRules)
     sessionTokenName = "s3-web-client-token"
-
 	authInit(config.ClientID, config.ClientSecret, config.RedirectURL)
-	secureCookie = securecookie.New([]byte(config.CookieHashKey), nil)
-	store = sessions.NewCookieStore([]byte(config.CookieHashKey))
+	store = sessions.NewCookieStore(securecookie.GenerateRandomKey(64),securecookie.GenerateRandomKey(32))
 	store.Options = &sessions.Options{
-		MaxAge:   60 * 15, // 15 min
+		MaxAge:   60 * 60, // 1 hour to match google oauth token
 		HttpOnly: true,
+		//Domain: "localhost",
 	}
 
     var wait time.Duration

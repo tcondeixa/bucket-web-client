@@ -48,8 +48,23 @@ func userInfoFromToken (token *oauth2.Token) (err error, user *GoogleUser) {
 }
 
 
-func getListBucketUser(userEmail string) (buckets []string) {
+func removeDuplicateStrings(slice []string) ([]string) {
+    keys := map[string]bool{}
+    list := []string{}
 
+    for _, entry := range slice {
+        if _, value := keys[entry]; !value {
+            keys[entry] = true
+            list = append(list, entry)
+        }
+    }
+
+    return list
+}
+
+func getListBucketUser(userEmail string) ([]string) {
+
+    var buckets []string
     for _,rule := range authRules.AuthRules {
         for _,user := range rule.Emails {
             if user == userEmail {
@@ -58,7 +73,9 @@ func getListBucketUser(userEmail string) (buckets []string) {
         }
     }
 
-    return
+    uniqueBuckets := removeDuplicateStrings(buckets)
+
+    return uniqueBuckets
 }
 
 

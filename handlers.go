@@ -113,7 +113,8 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    http.Redirect(w, r, "/main/"+verifiedBucket, http.StatusFound)
+    s3Bucket := getFriendlyBucketName(verifiedBucket)
+    http.Redirect(w, r, "/main/"+s3Bucket, http.StatusFound)
 }
 
 func bucketHandler(w http.ResponseWriter, r *http.Request) {
