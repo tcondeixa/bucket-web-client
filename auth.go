@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 	"io/ioutil"
 )
 
@@ -19,6 +20,20 @@ type GoogleUser struct {
 	Email string `json:"email"`
 	EmailVerified bool `json:"email_verified"`
 	Gender string `json:"gender"`
+}
+
+
+func authInit (ClientID, ClientSecret, RedirectUrl string) {
+	oauthConf = &oauth2.Config{
+		ClientID:     ClientID,
+		ClientSecret: ClientSecret,
+		RedirectURL:  RedirectUrl,
+		Scopes: []string{
+			"https://www.googleapis.com/auth/userinfo.email",
+			"https://www.googleapis.com/auth/userinfo.profile",
+		},
+		Endpoint: google.Endpoint,
+	}
 }
 
 
@@ -62,13 +77,35 @@ func removeDuplicateStrings(slice []string) ([]string) {
     return list
 }
 
+
+func getBucketProvider(bucketName string) (string) {
+
+    for _,rule := range authRules.AuthRules {
+        for _,b := range rule.AwsBuckets {
+            if b == bucketName {
+                return "aws"
+            }
+        }
+
+        for _,b := range rule.GcpBuckets {
+            if b == bucketName {
+                return "gcp"
+            }
+        }
+    }
+
+    return "none"
+}
+
+
 func getListBucketUser(userEmail string) ([]string) {
 
     var buckets []string
     for _,rule := range authRules.AuthRules {
         for _,user := range rule.Emails {
             if user == userEmail {
-                buckets = append (buckets, rule.Buckets...)
+                buckets = append (buckets, rule.AwsBuckets...)
+                buckets = append (buckets, rule.GcpBuckets...)
             }
         }
     }
@@ -84,7 +121,7 @@ func checkUserAuth(userEmail string) (bool) {
     for _,rule := range authRules.AuthRules {
         for _,user := range rule.Emails {
             if user == userEmail {
-                log.Info("User is allowed ", user)
+                log.Info("User ", user, " is allowed")
                 return true
             }
         }
@@ -99,9 +136,16 @@ func checkUserAuthBucket(userEmail string, userBucket string) (bool) {
     for _,rule := range authRules.AuthRules {
         for _,user := range rule.Emails {
             if user == userEmail {
-                for _,bucket := range rule.Buckets {
+                for _,bucket := range rule.AwsBuckets {
                     if bucket == userBucket {
-                        log.Info("User is allowed ", user, " to bucket ", bucket)
+                        log.Info("User ", user, " accessing Aws bucket ", bucket)
+                        return true
+                    }
+                }
+
+                for _,bucket := range rule.GcpBuckets {
+                    if bucket == userBucket {
+                        log.Info("User ", user, " accessing Gcp bucket ", bucket)
                         return true
                     }
                 }
@@ -111,6 +155,7 @@ func checkUserAuthBucket(userEmail string, userBucket string) (bool) {
 
     return false
 }
+
 
 func getRealBucketName(friendlyName string) string {
 
@@ -123,6 +168,7 @@ func getRealBucketName(friendlyName string) string {
     return friendlyName
 }
 
+
 func getFriendlyBucketName(realName string) string {
 
     for _,bucket := range authRules.BucketNames {
@@ -133,6 +179,7 @@ func getFriendlyBucketName(realName string) string {
 
     return realName
 }
+
 
 func changeRealToFriendlyBuckets (realName []string) []string {
 
