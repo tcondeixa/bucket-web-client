@@ -11,6 +11,8 @@ RUN go build -o /app
 
 FROM alpine:3.12
 WORKDIR /usr/bin
+COPY /static ./static
+COPY /templates ./templates
 COPY --from=build /app .
 EXPOSE 8080
 CMD ["app"]
