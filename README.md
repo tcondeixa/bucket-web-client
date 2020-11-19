@@ -38,7 +38,7 @@ Defaults to info.
 
 `PORT`: Port to be used by the App. Defaults to "8080".
 
-`TITLE`: Title of the web page. Defaults to "S3 Web Service".
+`TITLE`: Title of the web page. Defaults to "Bucket Web Client".
 
 `CLIENT_ID`: Client ID from google Oauth integration. Mandatory.
 
@@ -84,4 +84,4 @@ This field is optional, so the default mode is to use the real bucket name.
 ### Dockerfile
 There is a Dockerfile available in dockerhub
 
-https://hub.docker.com/r/tscondeixa/s3-web-client
+https://hub.docker.com/r/tscondeixa/bucket-web-client

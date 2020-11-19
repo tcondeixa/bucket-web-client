@@ -32,7 +32,7 @@ type EnvVars struct {
 	Host			string `default:"0.0.0.0" envconfig:"HOST"`
 	Port			string `default:"8080" envconfig:"PORT"`
 	Log     		string `default:"Info"  envconfig:"LOG_LEVEL"`
-	Title	        string `default:"S3 Web Service" envconfig:"TITLE"`
+	Title	        string `default:"Bucket Web Client" envconfig:"TITLE"`
 	ClientID    	string `required:"true" envconfig:"CLIENT_ID"`
 	ClientSecret	string `required:"true" envconfig:"CLIENT_SECRET"`
 	RedirectURL     string `required:"true" envconfig:"REDIRECT_URL"`

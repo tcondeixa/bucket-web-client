@@ -1,8 +1,8 @@
 #!/bin/bash -xe
 
-VERSION=v0.5
+VERSION=v0.6
 ACCOUNT=tscondeixa
-REPO=s3-web-client
+REPO=bucket-web-client
 
 docker build -f Dockerfile -t $ACCOUNT/$REPO:$VERSION  .
 docker tag $ACCOUNT/$REPO:$VERSION $ACCOUNT/$REPO:latest
