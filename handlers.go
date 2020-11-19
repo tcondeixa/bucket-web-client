@@ -135,7 +135,6 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     log.Trace("")
-    allowedBuckets = orderBuckets(bucket, allowedBuckets)
     isAllowed := checkUserAuthBucket(user.Email, bucket)
     if isAllowed == false {
         log.Info("unauthorised user trying to access", user.Email)
@@ -208,13 +207,14 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     log.Trace("")
+    friendlyBuckets := getFriendlyBucketName(bucket)
     tmpl := template.Must(template.ParseFiles("templates/bucket.tmpl"))
     log.Trace("")
     templateData := replyObjects {
         Title: config.Title,
         Email: user.Email,
         Picture: user.Picture,
-        Buckets: changeRealToFriendlyBuckets(allowedBuckets),
+        Buckets: orderBuckets(bucket, friendlyBuckets),
         Bucket: getFriendlyBucketName(bucket),
         Objects: objectsList,
     }
