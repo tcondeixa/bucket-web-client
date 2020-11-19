@@ -1,4 +1,4 @@
-FROM golang:1.14-alpine
+FROM golang:1.14-alpine3.12 as build
 RUN apk update && apk add --no-cache git
 WORKDIR /go/src/app
 
@@ -7,8 +7,10 @@ COPY /templates ./templates
 COPY /*.go ./
 
 RUN go get -d -v
-RUN go install -v
+RUN go build -o /app
 
+FROM alpine:3.12
+WORKDIR /usr/bin
+COPY --from=build /app .
 EXPOSE 8080
-
 CMD ["app"]
