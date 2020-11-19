@@ -207,7 +207,7 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     log.Trace("")
-    friendlyBuckets := getFriendlyBucketName(bucket)
+    friendlyBuckets := changeRealToFriendlyBuckets(allowedBuckets)
     tmpl := template.Must(template.ParseFiles("templates/bucket.tmpl"))
     log.Trace("")
     templateData := replyObjects {
