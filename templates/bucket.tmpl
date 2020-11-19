@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>S3 Web Service</title>
+    <title>{{ .Title }}</title>
     <meta charset="UTF-8">
-    <meta name="description" content="List and Download S3 Files">
-    <meta name="keywords" content="aws s3">
+    <meta name="description" content="List and Download Bucket Objects">
+    <meta name="keywords" content="aws, gcp, bucket">
     <meta name="author" content="Tiago Condeixa">
     <link rel="stylesheet" href="/css/main.css?v=0.1">
 </head>
@@ -23,20 +23,20 @@
     <aside>
         <form>
             <select onchange="setBucket()" class="bucket-picker" id="bucket">
-                {{ range .S3Buckets }}
+                {{ range .Buckets }}
                     <option>{{ . }}</option>
                 {{ end }}
             </select>
         </form>
     </aside>
     <section>
-        {{$bucket := .S3Bucket}}
-        {{ range .S3Objects }}
+        {{$bucket := .Bucket}}
+        {{ range .Objects }}
         <p style="font-size:12px"><a href="/main/{{ $bucket }}?object={{ . }}" target="_blank">{{ . }}</a></p>
         {{ end }}
     </section>
 <footer>
-    <small>S3 Web Service made by Tiago Condeixa <a href="https://github.com/tcondeixa/s3-web-client">github</a></small>
+    <small>Bucket Web Service made by Tiago Condeixa <a href="https://github.com/tcondeixa/buckets-web-service">github</a></small>
 </footer>
 <script type="text/javascript" src="/js/main.js?v=0.1"></script>
 </body>

@@ -1,6 +1,6 @@
-# S3 Web Client
+# Bucket Web Client
 
-It provides a web abstraction for list and get methods for files in AWS S3 buckets. 
+It provides a web abstraction for list and get methods for files in AWS S3 Buckets and GCP Storage Buckets. 
 
 The authentication is provided by the google Oauth and the authorisation is defined as a configuration of the service.
 The service allow you to define the set of buckets that each user can access, based on bucket names and user google emails. 
@@ -15,11 +15,18 @@ The service needs AWS IAM permissions to access the S3 buckets, and they will be
 3. IAM role.
 
 ALL `AWS_` env variables can be used to change configurations and credentials, such as region and profile. 
+This is only needed in case you provide access to AWS S3 Buckets.
 
 The credentials provided need to allow:
 - ListBucket
 - GetObject
 
+`GOOGLE_APPLICATION_CREDENTIALS` env variables with path to the service account credentials in json.
+This is only needed in case you provide access to GCP Storage Buckets.
+
+The service account need to allow:
+- List
+- Get
 
 ### Environmental Variables:
 
@@ -50,7 +57,8 @@ This is a configuration file in json format with the following schema:
   "auth_rules": [
     {
       "emails": [],
-      "buckets": []
+      "aws_buckets": [],
+      "gcp_buckets": []
     },
     ...
   ],

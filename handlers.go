@@ -16,15 +16,11 @@ type replyObjects struct {
 	Title string
 	Email string
 	Picture string
-	S3Buckets []string
-	S3Bucket string
-	S3Objects []string
+	Buckets []string
+	Bucket string
+	Objects []string
 }
 
-
-type signedUrl struct {
-	Url string
-}
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -33,7 +29,8 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	tmpl := template.Must(template.ParseFiles("templates/login.tmpl"))
 	templateData := map[string]interface{}{
-		"link": url,
+		"Link": url,
+		"Title": config.Title,
 	}
 	tmpl.ExecuteTemplate(w, "login.tmpl", &templateData)
 }
@@ -67,7 +64,7 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
     log.Trace("")
     isAllowed := checkUserAuth(user.Email)
     if isAllowed == false {
-        log.Info("unauthorised user trying to access", user.Email)
+        log.Info("unauthorised user trying to access ", user.Email)
         http.Redirect(w, r, "/login", http.StatusFound)
         return
     }
@@ -83,38 +80,16 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
     log.Trace("")
-    err, sess := AwsSessionCreate()
-    if err != nil {
-        log.Error(err)
+    err, verifiedBucket := getVerifiedBucket(user.Email)
+    if err != nil || verifiedBucket == "" {
+        log.Error("No Buckets allowed for user ", user.Email)
         http.Redirect(w, r, "/login", http.StatusFound)
         return
     }
 
     log.Trace("")
-    var verifiedBucket string
-    allowedBuckets := getListBucketUser(user.Email)
-    log.Trace("")
-    for _,bucket := range allowedBuckets {
-        err, exist := AwsCheckBucketExist(sess, bucket)
-        if err != nil {
-            log.Error(err)
-            continue
-        }
-
-        if exist == true {
-            verifiedBucket = bucket
-            break
-        }
-    }
-
-    log.Trace("")
-    if verifiedBucket == "" {
-        http.Redirect(w, r, "/login", http.StatusFound)
-        return
-    }
-
-    s3Bucket := getFriendlyBucketName(verifiedBucket)
-    http.Redirect(w, r, "/main/"+s3Bucket, http.StatusFound)
+    bucket := getFriendlyBucketName(verifiedBucket)
+    http.Redirect(w, r, "/main/"+bucket, http.StatusFound)
 }
 
 func bucketHandler(w http.ResponseWriter, r *http.Request) {
@@ -147,33 +122,21 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
     log.Trace("")
-    err, sess := AwsSessionCreate()
-    if err != nil {
-        log.Error(err)
+    allowedBuckets := getListBucketUser(user.Email)
+
+    log.Trace("")
+    vars := mux.Vars(r)
+    bucket := getRealBucketName(vars["bucket"])
+    provider := getBucketProvider(bucket)
+    if provider != "aws" && provider != "gcp" {
+        log.Error("Bucket does not belong to any provider")
         http.Redirect(w, r, "/login", http.StatusFound)
         return
     }
 
     log.Trace("")
-    allowedBuckets := getListBucketUser(user.Email)
-
-    log.Trace("")
-    vars := mux.Vars(r)
-    s3Bucket := getRealBucketName(vars["bucket"])
-
-    selectedBucketPos := 0
-    firstBucketValue := allowedBuckets[0]
-    for index,bucket := range allowedBuckets {
-        if bucket == s3Bucket {
-            selectedBucketPos = index
-            break
-        }
-    }
-    allowedBuckets[0] = s3Bucket
-    allowedBuckets[selectedBucketPos] = firstBucketValue
-
-    log.Trace("")
-    isAllowed := checkUserAuthBucket(user.Email,s3Bucket)
+    allowedBuckets = orderBuckets(bucket, allowedBuckets)
+    isAllowed := checkUserAuthBucket(user.Email, bucket)
     if isAllowed == false {
         log.Info("unauthorised user trying to access", user.Email)
         http.Redirect(w, r, "/login", http.StatusFound)
@@ -181,9 +144,30 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     log.Trace("")
-    s3Object := r.URL.Query().Get("object")
-    if s3Object != "" {
-        err, presignUrl := AwsS3PresignObjectGet(sess, s3Bucket, s3Object)
+    object := r.URL.Query().Get("object")
+    if object != "" {
+
+        var presignUrl string
+        if provider == "aws" {
+            err, sess := AwsSessionCreate()
+            if err != nil {
+                log.Error(err)
+                http.Redirect(w, r, "/login", http.StatusFound)
+                return
+            }
+
+            err, presignUrl = AwsS3PresignObjectGet(sess, bucket, object)
+        } else if provider == "gcp" {
+            err, client := GcpSessionCreate()
+            if err != nil {
+                log.Error(err)
+                http.Redirect(w, r, "/login", http.StatusFound)
+                return
+            }
+
+            err, presignUrl = GcpPresignObjectGet(client, bucket, object)
+        }
+
         if err != nil {
             log.Error(err)
             http.Redirect(w, r, "/login", http.StatusFound)
@@ -196,7 +180,27 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     log.Trace("")
-    err, objectsList := AwsS3BucketList(sess, s3Bucket)
+    var objectsList []string
+    if provider == "aws" {
+        err, sess := AwsSessionCreate()
+        if err != nil {
+            log.Error(err)
+            http.Redirect(w, r, "/login", http.StatusFound)
+            return
+        }
+
+        err, objectsList = AwsS3BucketList(sess, bucket)
+    } else if provider == "gcp" {
+        err, client := GcpSessionCreate()
+        if err != nil {
+            log.Error(err)
+            http.Redirect(w, r, "/login", http.StatusFound)
+            return
+        }
+
+        err, objectsList = GcpBucketList(client, bucket)
+    }
+
     if err != nil {
         log.Error(err)
         http.Redirect(w, r, "/login", http.StatusFound)
@@ -204,18 +208,15 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     log.Trace("")
-    s3Bucket = getFriendlyBucketName(s3Bucket)
-    allowedBuckets = changeRealToFriendlyBuckets(allowedBuckets)
-    log.Trace("")
     tmpl := template.Must(template.ParseFiles("templates/bucket.tmpl"))
     log.Trace("")
     templateData := replyObjects {
         Title: config.Title,
         Email: user.Email,
         Picture: user.Picture,
-        S3Buckets: allowedBuckets,
-        S3Bucket: s3Bucket,
-        S3Objects: objectsList,
+        Buckets: changeRealToFriendlyBuckets(allowedBuckets),
+        Bucket: getFriendlyBucketName(bucket),
+        Objects: objectsList,
     }
 
     tmpl.ExecuteTemplate(w, "bucket.tmpl", &templateData)
@@ -229,7 +230,7 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session.Values["testing"] = ""
+	session.Values["oauth"] = ""
 	session.Options.MaxAge = -1
 
 	err = session.Save(r, w)

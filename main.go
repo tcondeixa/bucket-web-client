@@ -7,7 +7,6 @@ import (
   	"github.com/kelseyhightower/envconfig"
   	log "github.com/sirupsen/logrus"
   	"golang.org/x/oauth2"
-  	"golang.org/x/oauth2/google"
   	"github.com/gorilla/sessions"
   	"github.com/gorilla/securecookie"
   	"net/http"
@@ -17,7 +16,6 @@ import (
   	"time"
   	"encoding/json"
   	"io/ioutil"
-  	"sort"
 )
 
 
@@ -39,6 +37,7 @@ type EnvVars struct {
 	ClientSecret	string `required:"true" envconfig:"CLIENT_SECRET"`
 	RedirectURL     string `required:"true" envconfig:"REDIRECT_URL"`
 	AuthFile        string `required:"true" envconfig:"AUTH_FILE"`
+	GoogleFile      string `default:"" envconfig:"GOOGLE_APPLICATION_CREDENTIALS"`
 }
 
 type AuthRules struct {
@@ -48,7 +47,8 @@ type AuthRules struct {
 
 type AuthRule struct {
 	Emails []string `json:"emails"`
-	Buckets []string `json:"buckets"`
+	AwsBuckets []string `json:"aws_buckets"`
+	GcpBuckets []string `json:"gcp_buckets"`
 }
 
 type BucketNaming struct {
@@ -67,42 +67,7 @@ func logInit() {
 	log.SetReportCaller(true)
 }
 
-func authInit (ClientID, ClientSecret, RedirectUrl string) {
-	oauthConf = &oauth2.Config{
-		ClientID:     ClientID,
-		ClientSecret: ClientSecret,
-		RedirectURL:  RedirectUrl,
-		Scopes: []string{
-			"https://www.googleapis.com/auth/userinfo.email",
-			"https://www.googleapis.com/auth/userinfo.profile",
-		},
-		Endpoint: google.Endpoint,
-	}
-}
 
-//"https://www.googleapis.com/auth/admin.directory.group.readonly",
-//"https://www.googleapis.com/auth/admin.directory.group.member.readonly",
-
-func sortAndValidateAuthRules (authRules []AuthRule) (bool) {
-
-    err, sess := AwsSessionCreate()
-    if err != nil {
-        log.Error(err)
-        return false
-    }
-
-    for _,rule := range authRules {
-        sort.Strings(rule.Emails)
-        sort.Strings(rule.Buckets)
-        err, _ := checkAllBuckets(sess, rule.Buckets)
-        if err != nil {
-            log.Error("Please check if all buckets in auth_rules exists and app has access")
-            return false
-        }
-    }
-
-    return true
-}
 
 
 func main() {
@@ -133,9 +98,9 @@ func main() {
 
     byteValue, _ := ioutil.ReadAll(jsonFile)
     json.Unmarshal(byteValue, &authRules)
-    valid := sortAndValidateAuthRules(authRules.AuthRules)
-    if !valid {
-        log.Error("Fail to reach buckets ", err)
+    err = sortAndValidateAuthRules(authRules.AuthRules)
+    if err != nil {
+        log.Error(err)
         os.Exit(1)
     }
 
@@ -146,7 +111,6 @@ func main() {
 	store.Options = &sessions.Options{
 		MaxAge:   60 * 60, // 1 hour to match google oauth token
 		HttpOnly: true,
-		//Domain: "localhost",
 	}
 
     var wait time.Duration

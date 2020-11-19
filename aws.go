@@ -78,7 +78,7 @@ func AwsCheckBucketExist(sess *session.Session, bucketName string) (error, bool)
 }
 
 
-func checkAllBuckets(sess *session.Session, buckets []string) (error, []string) {
+func checkAllAwsBuckets(sess *session.Session, buckets []string) (error, []string) {
 
    var verifiedBuckets []string
    var bucketProblems error
