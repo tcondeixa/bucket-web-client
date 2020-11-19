@@ -113,6 +113,11 @@ func main() {
 		HttpOnly: true,
 	}
 
+    _, sess := GcpSessionCreate()
+    _, list := GcpListBuckets(sess)
+    log.Info(len(list))
+    log.Info(list)
+
     var wait time.Duration
     flag.DurationVar(&wait, "graceful-timeout", time.Second*30, "the duration for which the server gracefully wait for existing connections to finish")
     flag.Parse()

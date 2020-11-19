@@ -188,7 +188,7 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
             return
         }
 
-        err, objectsList = AwsS3BucketList(sess, bucket)
+        err, objectsList = AwsS3ListObjects(sess, bucket)
     } else if provider == "gcp" {
         err, client := GcpSessionCreate()
         if err != nil {
@@ -197,7 +197,7 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
             return
         }
 
-        err, objectsList = GcpBucketList(client, bucket)
+        err, objectsList = GcpListObjects(client, bucket)
     }
 
     if err != nil {

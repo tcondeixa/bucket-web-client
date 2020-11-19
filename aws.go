@@ -17,14 +17,32 @@ func AwsSessionCreate() (error, *session.Session) {
 	return err, sess
 }
 
-func AwsS3BucketList(sess *session.Session, bucketName string) (error, []string) {
+
+func AwsS3ListBuckets(sess *session.Session) (error, []string) {
+
+	svc := s3.New(sess)
+	req, err := svc.ListBuckets(nil)
+	if err != nil {
+		return err, nil
+	}
+
+    bucketsList := make([]string, len(req.Buckets))
+    for i, b := range req.Buckets {
+        bucketsList[i] = *b.Name
+    }
+
+	return err, bucketsList
+}
+
+
+func AwsS3ListObjects(sess *session.Session, bucketName string) (error, []string) {
 
 	var objectsList []string
 
 	svc := s3.New(sess)
-	err := svc.ListObjectsPages(&s3.ListObjectsInput{
+	err := svc.ListObjectsV2Pages(&s3.ListObjectsV2Input{
 		Bucket: aws.String(bucketName),
-	}, func(p *s3.ListObjectsOutput, last bool) (shouldContinue bool) {
+	}, func(p *s3.ListObjectsV2Output, last bool) (shouldContinue bool) {
 	    objectsListPage := make([]string, len(p.Contents))
 		for i, obj := range p.Contents {
 			objectsListPage[i] = *obj.Key

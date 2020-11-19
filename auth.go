@@ -6,6 +6,7 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"io/ioutil"
+	"regexp"
 )
 
 
@@ -103,7 +104,13 @@ func getListBucketUser(userEmail string) ([]string) {
     var buckets []string
     for _,rule := range authRules.AuthRules {
         for _,user := range rule.Emails {
-            if user == userEmail {
+            found, err := regexp.MatchString(user, userEmail)
+            if err != nil {
+                log.Error(err)
+                continue
+            }
+
+            if found {
                 buckets = append (buckets, rule.AwsBuckets...)
                 buckets = append (buckets, rule.GcpBuckets...)
             }
@@ -120,8 +127,14 @@ func checkUserAuth(userEmail string) (bool) {
 
     for _,rule := range authRules.AuthRules {
         for _,user := range rule.Emails {
-            if user == userEmail {
-                log.Info("User ", user, " is allowed")
+            found, err := regexp.MatchString(user, userEmail)
+            if err != nil {
+                log.Error(err)
+                continue
+            }
+
+            if found {
+                log.Info("User ", userEmail, " is allowed")
                 return true
             }
         }
@@ -135,17 +148,23 @@ func checkUserAuthBucket(userEmail string, userBucket string) (bool) {
 
     for _,rule := range authRules.AuthRules {
         for _,user := range rule.Emails {
-            if user == userEmail {
+            found, err := regexp.MatchString(user, userEmail)
+            if err != nil {
+                log.Error(err)
+                continue
+            }
+
+            if found {
                 for _,bucket := range rule.AwsBuckets {
                     if bucket == userBucket {
-                        log.Info("User ", user, " accessing Aws bucket ", bucket)
+                        log.Info("User ", userEmail, " accessing Aws bucket ", bucket)
                         return true
                     }
                 }
 
                 for _,bucket := range rule.GcpBuckets {
                     if bucket == userBucket {
-                        log.Info("User ", user, " accessing Gcp bucket ", bucket)
+                        log.Info("User ", userEmail, " accessing Gcp bucket ", bucket)
                         return true
                     }
                 }

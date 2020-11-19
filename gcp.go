@@ -5,9 +5,12 @@ import (
 	"io/ioutil"
 	"context"
 
+	"fmt"
+
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/iterator"
 	"cloud.google.com/go/storage"
+    "google.golang.org/api/cloudresourcemanager/v1"
 )
 
 
@@ -23,13 +26,57 @@ func GcpSessionCreate() (error, *storage.Client) {
 }
 
 
-func GcpBucketList(client *storage.Client, bucketName string) (error, []string) {
+func GcpListBuckets(client *storage.Client) (error, []string) {
+
+	var bucketsList []string
+
+    ctx := context.Background()
+    c, err := google.DefaultClient(ctx, cloudresourcemanager.CloudPlatformScope)
+    if err != nil {
+        return err, nil
+    }
+
+    cloudresourcemanagerService, err := cloudresourcemanager.New(c)
+    if err != nil {
+        return err, nil
+    }
+
+    req := cloudresourcemanagerService.Projects.List()
+    if err := req.Pages(ctx, func(page *cloudresourcemanager.ListProjectsResponse) error {
+        for _, project := range page.Projects {
+            fmt.Printf("%v\n", project)
+            it := client.Buckets(ctx, project.ProjectId)
+            for {
+                attrs, err := it.Next()
+                if err == iterator.Done {
+                        break
+                }
+
+                if err != nil {
+                        return err
+                }
+
+                bucketsList = append(bucketsList, attrs.Name)
+            }
+        }
+
+        return nil
+    }); err != nil {
+            return err, nil
+    }
+
+	return nil, bucketsList
+}
+
+
+func GcpListObjects(client *storage.Client, bucketName string) (error, []string) {
 
 	var objectsList []string
-	ctx := context.Background()
 
-	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+    ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
 	defer cancel()
+
 	it := client.Bucket(bucketName).Objects(ctx, nil)
 	for {
 		attrs, err := it.Next()
@@ -38,7 +85,7 @@ func GcpBucketList(client *storage.Client, bucketName string) (error, []string) 
 		}
 
 		if err != nil {
-			return err, objectsList
+			return err, nil
 		}
 
 		objectsList = append(objectsList, attrs.Name)
@@ -76,7 +123,10 @@ func GcpPresignObjectGet(client *storage.Client, bucketName, objectName string) 
 
 func GcpCheckBucketExist(client *storage.Client, bucketName string) (error, bool) {
 
-	ctx := context.Background()
+    ctx := context.Background()
+    ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+    defer cancel()
+
 	_, err := client.Bucket(bucketName).Attrs(ctx)
 	if err != nil {
         if err == storage.ErrBucketNotExist {
