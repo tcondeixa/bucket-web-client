@@ -122,7 +122,12 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
     log.Trace("")
-    allowedBuckets := getListBucketUser(user.Email)
+    err, allowedBuckets := getListBucketUserMatching(getListBucketUserConfig(user.Email))
+    if err != nil {
+        log.Error(err)
+        http.Redirect(w, r, "/login", http.StatusFound)
+        return
+    }
 
     log.Trace("")
     vars := mux.Vars(r)
@@ -137,7 +142,7 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
     log.Trace("")
     isAllowed := checkUserAuthBucket(user.Email, bucket)
     if isAllowed == false {
-        log.Info("unauthorised user trying to access", user.Email)
+        log.Info("unauthorised user trying to access ", user.Email)
         http.Redirect(w, r, "/login", http.StatusFound)
         return
     }

@@ -42,9 +42,10 @@ func GcpListBuckets(client *storage.Client) (error, []string) {
     }
 
     req := cloudresourcemanagerService.Projects.List()
-    if err := req.Pages(ctx, func(page *cloudresourcemanager.ListProjectsResponse) error {
+    err = req.Pages(ctx,func(page *cloudresourcemanager.ListProjectsResponse) error {
         for _, project := range page.Projects {
             fmt.Printf("%v\n", project)
+
             it := client.Buckets(ctx, project.ProjectId)
             for {
                 attrs, err := it.Next()
@@ -61,8 +62,11 @@ func GcpListBuckets(client *storage.Client) (error, []string) {
         }
 
         return nil
-    }); err != nil {
-            return err, nil
+
+    });
+
+    if err != nil {
+        return err, nil
     }
 
 	return nil, bucketsList

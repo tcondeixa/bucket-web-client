@@ -82,14 +82,26 @@ func removeDuplicateStrings(slice []string) ([]string) {
 func getBucketProvider(bucketName string) (string) {
 
     for _,rule := range authRules.AuthRules {
-        for _,b := range rule.AwsBuckets {
-            if b == bucketName {
+        for _,bucket := range rule.AwsBuckets {
+            found, err := regexp.MatchString(bucket, bucketName)
+            if err != nil {
+                log.Error(err)
+                continue
+            }
+
+            if found {
                 return "aws"
             }
         }
 
-        for _,b := range rule.GcpBuckets {
-            if b == bucketName {
+        for _,bucket := range rule.GcpBuckets {
+            found, err := regexp.MatchString(bucket, bucketName)
+            if err != nil {
+                log.Error(err)
+                continue
+            }
+
+            if found {
                 return "gcp"
             }
         }
@@ -99,9 +111,9 @@ func getBucketProvider(bucketName string) (string) {
 }
 
 
-func getListBucketUser(userEmail string) ([]string) {
+func getListBucketUserConfig(userEmail string) ([]string, []string) {
 
-    var buckets []string
+    var bucketsAws, bucketsGcp []string
     for _,rule := range authRules.AuthRules {
         for _,user := range rule.Emails {
             found, err := regexp.MatchString(user, userEmail)
@@ -111,15 +123,16 @@ func getListBucketUser(userEmail string) ([]string) {
             }
 
             if found {
-                buckets = append (buckets, rule.AwsBuckets...)
-                buckets = append (buckets, rule.GcpBuckets...)
+                bucketsAws = append (bucketsAws, rule.AwsBuckets...)
+                bucketsGcp = append (bucketsGcp, rule.GcpBuckets...)
             }
         }
     }
 
-    uniqueBuckets := removeDuplicateStrings(buckets)
+    uniqueBucketsAws := removeDuplicateStrings(bucketsAws)
+    uniqueBucketsGcp := removeDuplicateStrings(bucketsGcp)
 
-    return uniqueBuckets
+    return uniqueBucketsAws, uniqueBucketsGcp
 }
 
 
@@ -156,14 +169,26 @@ func checkUserAuthBucket(userEmail string, userBucket string) (bool) {
 
             if found {
                 for _,bucket := range rule.AwsBuckets {
-                    if bucket == userBucket {
+                    found, err := regexp.MatchString(bucket, userBucket)
+                    if err != nil {
+                        log.Error(err)
+                        continue
+                    }
+
+                    if found {
                         log.Info("User ", userEmail, " accessing Aws bucket ", bucket)
                         return true
                     }
                 }
 
                 for _,bucket := range rule.GcpBuckets {
-                    if bucket == userBucket {
+                    found, err := regexp.MatchString(bucket, userBucket)
+                    if err != nil {
+                        log.Error(err)
+                        continue
+                    }
+
+                    if found {
                         log.Info("User ", userEmail, " accessing Gcp bucket ", bucket)
                         return true
                     }

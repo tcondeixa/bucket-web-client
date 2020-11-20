@@ -21,7 +21,7 @@ The credentials provided need to allow:
 - ListBucket
 - GetObject
 
-`GOOGLE_APPLICATION_CREDENTIALS` env variables with path to the service account credentials in json.
+`GOOGLE_APPLICATION_CREDENTIALS` env variable with the path to the service account credentials in json format.
 This is only needed in case you provide access to GCP Storage Buckets.
 
 The service account need to allow:
@@ -31,7 +31,7 @@ The service account need to allow:
 ### Environmental Variables:
 
 `LOG_LEVEL`: level of the logging output to stdout and stderr 
-\[**trace**, **debug**, **info**, **warning**, **error**, **fatal**, **panic**\].
+[**trace**, **debug**, **info**, **warning**, **error**, **fatal**, **panic**].
 Defaults to info.
 
 `HOST`: Address to be used by the App. Defaults to "0.0.0.0".
@@ -74,6 +74,18 @@ This is a configuration file in json format with the following schema:
 
 The `auth_rule` allow to define the permissions regarding buckets access to emails.
 This field is mandatory, otherwise the user is always redirected to the login page.
+
+#### Regex `"auth_rules"`
+All fields on the `"auth_rules"` are processed as regex, so please be sure about the regex you chose. 
+You can test the regex [here](https://regoio.herokuapp.com/).
+More information you can find in the regexp package (http://golang.org/pkg/regexp/)
+
+*Some Regex Examples:*
+- access to a single user of the domain `^user.name@domain.com$`
+- access to all user of the domain `@mydomain.com$`
+- access to a single bucket `^my-buclet-full-name$`
+- access all my bucket with a work `bucket`
+
 
 The `bucket_friendly_naming` define more friendly names for buckets, so it ensures a translation in everything displayed to the end user. 
 This field is optional, so the default mode is to use the real bucket name.
