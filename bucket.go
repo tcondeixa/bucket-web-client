@@ -4,60 +4,16 @@ import (
 	log "github.com/sirupsen/logrus"
 	"sort"
 	"regexp"
+	"sync"
+	"time"
 )
 
-func getVerifiedBucket (userEmail string) (error, string) {
+var signUrlValidMin time.Duration = 15
 
-    err, allowedBuckets := getListBucketUserMatching(getListBucketUserConfig(userEmail))
-    if err != nil {
-        log.Error(err)
-        return err, ""
-    }
-
-    for _,bucket := range allowedBuckets {
-        provider := getBucketProvider(bucket)
-
-        exist := false
-        if provider == "aws" {
-            err, sess := AwsSessionCreate()
-            if err != nil {
-                log.Error(err)
-                continue
-            }
-
-            err, exist = AwsCheckBucketExist(sess, bucket)
-            if err != nil {
-                log.Error(err)
-                continue
-            }
-
-        } else if provider == "gcp" {
-            err, client := GcpSessionCreate()
-            if err != nil {
-                log.Error(err)
-                continue
-            }
-
-            err, exist = GcpCheckBucketExist(client, bucket)
-            if err != nil {
-                log.Error(err)
-                continue
-            }
-
-        } else {
-            log.Error("Unknown provider ", provider)
-            continue
-        }
-
-        if exist == true {
-            return nil, bucket
-        }
-    }
-
-    return nil, ""
-}
 
 func orderBuckets (selectBucket string, buckets []string) ([]string) {
+
+    log.Trace(selectBucket, buckets)
 
     // Order bucket slice but having the selected bucket in the first position
     selectedBucketPos := 0
@@ -75,68 +31,88 @@ func orderBuckets (selectBucket string, buckets []string) ([]string) {
     return buckets
 }
 
-func getListBucketUserMatching (bucketsAws []string, bucketsGcp []string) (error, []string) {
 
-    var matchBuckets []string
-    //ListBucketsAws
-    //Compare if match with regex and append to a new slice
-    if len(bucketsAws) > 0 {
-        err, sess := AwsSessionCreate()
-        if err != nil {
-            log.Error(err)
-            return err, nil
-        }
+func getMatchedBucketUserAws (wg *sync.WaitGroup, matchBuckets *[]string, bucketsAws []string) {
 
-        err, allBuckets := AwsS3ListBuckets(sess)
-        if err != nil {
-            log.Error(err)
-            return err, nil
-        }
+    log.Trace(*matchBuckets, bucketsAws)
+    defer wg.Done()
 
-        for _, bucketRemote := range allBuckets {
-            for _, bucketLocal := range bucketsAws {
-                found, err := regexp.MatchString(bucketLocal, bucketRemote)
-                if err != nil {
-                    log.Error(err)
-                    continue
-                }
+    err, allBuckets := AwsS3ListBuckets()
+    if err != nil {
+        log.Error(err)
+        return
+    }
 
-                if found {
-                    matchBuckets = append(matchBuckets, bucketRemote)
-                }
+    for _, bucketRemote := range allBuckets {
+        for _, bucketLocal := range bucketsAws {
+            found, err := regexp.MatchString(bucketLocal, bucketRemote)
+            if err != nil {
+                log.Error(err)
+                continue
+            }
+
+            if found {
+                *matchBuckets = append(*matchBuckets, bucketRemote)
             }
         }
+    }
+
+    log.Trace(*matchBuckets)
+}
+
+
+func getMatchedBucketUserGcp (wg *sync.WaitGroup, matchBuckets *[]string, bucketsGcp []string) {
+
+    log.Trace(*matchBuckets, bucketsGcp)
+    defer wg.Done()
+
+    err, allBuckets := GcpListBuckets()
+    if err != nil {
+        log.Error(err)
+        return
+    }
+
+    for _, bucketRemote := range allBuckets {
+        for _, bucketLocal := range bucketsGcp {
+            found, err := regexp.MatchString(bucketLocal, bucketRemote)
+            if err != nil {
+                log.Error(err)
+                continue
+            }
+
+            if found {
+                *matchBuckets = append(*matchBuckets, bucketRemote)
+            }
+        }
+    }
+
+    log.Trace(*matchBuckets)
+}
+
+
+func getListBucketUserMatching (bucketsAws, bucketsGcp []string) ([]string) {
+
+    log.Trace(bucketsAws, bucketsGcp)
+
+    var wg sync.WaitGroup
+    var matchBuckets []string
+    var matchAwsBuckets []string
+    var matchGcpBuckets []string
+
+    //ListBucketsAws
+    if len(bucketsAws) > 0 {
+        wg.Add(1)
+        go getMatchedBucketUserAws(&wg, &matchAwsBuckets, bucketsAws)
     }
 
     //ListBucketsGcp
-    //Compare if match with regex and append to a new slice
     if len(bucketsGcp) > 0 {
-        err, client := GcpSessionCreate()
-        if err != nil {
-            log.Error(err)
-            return err, nil
-        }
-
-        err, allBuckets := GcpListBuckets(client)
-        if err != nil {
-            log.Error(err)
-            return err, nil
-        }
-
-        for _, bucketRemote := range allBuckets {
-            for _, bucketLocal := range bucketsAws {
-                found, err := regexp.MatchString(bucketLocal, bucketRemote)
-                if err != nil {
-                    log.Error(err)
-                    continue
-                }
-
-                if found {
-                    matchBuckets = append(matchBuckets, bucketRemote)
-                }
-            }
-        }
+        wg.Add(1)
+        go getMatchedBucketUserGcp(&wg, &matchGcpBuckets, bucketsGcp)
     }
 
-    return nil, matchBuckets
+    wg.Wait()
+    log.Trace(matchAwsBuckets, matchGcpBuckets)
+    matchBuckets = append(matchAwsBuckets, matchGcpBuckets...)
+    return matchBuckets
 }

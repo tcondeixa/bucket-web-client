@@ -5,8 +5,6 @@ import (
 	"io/ioutil"
 	"context"
 
-	"fmt"
-
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/iterator"
 	"cloud.google.com/go/storage"
@@ -14,23 +12,17 @@ import (
 )
 
 
-func GcpSessionCreate() (error, *storage.Client) {
-
-	ctx := context.Background()
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		return err, nil
-	}
-
-	return err, client
-}
-
-
-func GcpListBuckets(client *storage.Client) (error, []string) {
+func GcpListBuckets() (error, []string) {
 
 	var bucketsList []string
 
     ctx := context.Background()
+    client, err := storage.NewClient(ctx)
+    if err != nil {
+        return err, nil
+    }
+    defer client.Close()
+
     c, err := google.DefaultClient(ctx, cloudresourcemanager.CloudPlatformScope)
     if err != nil {
         return err, nil
@@ -44,8 +36,6 @@ func GcpListBuckets(client *storage.Client) (error, []string) {
     req := cloudresourcemanagerService.Projects.List()
     err = req.Pages(ctx,func(page *cloudresourcemanager.ListProjectsResponse) error {
         for _, project := range page.Projects {
-            fmt.Printf("%v\n", project)
-
             it := client.Buckets(ctx, project.ProjectId)
             for {
                 attrs, err := it.Next()
@@ -73,11 +63,17 @@ func GcpListBuckets(client *storage.Client) (error, []string) {
 }
 
 
-func GcpListObjects(client *storage.Client, bucketName string) (error, []string) {
+func GcpListObjects(bucketName string) (error, []string) {
 
 	var objectsList []string
 
     ctx := context.Background()
+    client, err := storage.NewClient(ctx)
+    if err != nil {
+        return err, nil
+    }
+    defer client.Close()
+
 	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
 	defer cancel()
 
@@ -99,7 +95,14 @@ func GcpListObjects(client *storage.Client, bucketName string) (error, []string)
 }
 
 
-func GcpPresignObjectGet(client *storage.Client, bucketName, objectName string) (error, string) {
+func GcpPresignObjectGet(bucketName, objectName string) (error, string) {
+
+    ctx := context.Background()
+    client, err := storage.NewClient(ctx)
+    if err != nil {
+        return err, ""
+    }
+    defer client.Close()
 
 	jsonKey, err := ioutil.ReadFile(config.GoogleFile)
 	if err != nil {
@@ -116,7 +119,7 @@ func GcpPresignObjectGet(client *storage.Client, bucketName, objectName string) 
         Method:         "GET",
         GoogleAccessID: conf.Email,
         PrivateKey:     conf.PrivateKey,
-        Expires:        time.Now().Add(15 * time.Minute),
+        Expires:        time.Now().Add(signUrlValidMin * time.Minute),
     })
 	if err != nil {
 		return err, ""
@@ -125,13 +128,19 @@ func GcpPresignObjectGet(client *storage.Client, bucketName, objectName string) 
 	return nil, url
 }
 
-func GcpCheckBucketExist(client *storage.Client, bucketName string) (error, bool) {
+func GcpCheckBucketExist(bucketName string) (error, bool) {
 
     ctx := context.Background()
+    client, err := storage.NewClient(ctx)
+    if err != nil {
+        return err, false
+    }
+    defer client.Close()
+
     ctx, cancel := context.WithTimeout(ctx, time.Second*10)
     defer cancel()
 
-	_, err := client.Bucket(bucketName).Attrs(ctx)
+	_, err = client.Bucket(bucketName).Attrs(ctx)
 	if err != nil {
         if err == storage.ErrBucketNotExist {
             return nil, false
@@ -143,12 +152,12 @@ func GcpCheckBucketExist(client *storage.Client, bucketName string) (error, bool
 	return err, true
 }
 
-func checkAllGcpBuckets(sess *storage.Client, buckets []string) (error, []string) {
+func checkAllGcpBuckets(buckets []string) (error, []string) {
 
    var verifiedBuckets []string
    var bucketProblems error
    for _,bucket := range buckets {
-        err, exist := GcpCheckBucketExist(sess, bucket)
+        err, exist := GcpCheckBucketExist(bucket)
         if err != nil {
             bucketProblems = err
             continue

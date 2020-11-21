@@ -18,43 +18,11 @@ import (
   	"io/ioutil"
 )
 
-
 var config EnvVars
 var authRules AuthRules
-
 var oauthConf *oauth2.Config
-
 var store *sessions.CookieStore
 var sessionTokenName string
-
-
-type EnvVars struct {
-	Host			string `default:"0.0.0.0" envconfig:"HOST"`
-	Port			string `default:"8080" envconfig:"PORT"`
-	Log     		string `default:"Info"  envconfig:"LOG_LEVEL"`
-	Title	        string `default:"Bucket Web Client" envconfig:"TITLE"`
-	ClientID    	string `required:"true" envconfig:"CLIENT_ID"`
-	ClientSecret	string `required:"true" envconfig:"CLIENT_SECRET"`
-	RedirectURL     string `required:"true" envconfig:"REDIRECT_URL"`
-	AuthFile        string `required:"true" envconfig:"AUTH_FILE"`
-	GoogleFile      string `default:"" envconfig:"GOOGLE_APPLICATION_CREDENTIALS"`
-}
-
-type AuthRules struct {
-	AuthRules []AuthRule `json:"auth_rules"`
-	BucketNames []BucketNaming `json:"bucket_friendly_naming"`
-}
-
-type AuthRule struct {
-	Emails []string `json:"emails"`
-	AwsBuckets []string `json:"aws_buckets"`
-	GcpBuckets []string `json:"gcp_buckets"`
-}
-
-type BucketNaming struct {
-	RealName string `json:"real_name"`
-	FriendlyName string `json:"friendly_name"`
-}
 
 
 func logInit() {
@@ -66,8 +34,6 @@ func logInit() {
 	log.SetLevel(log.InfoLevel)
 	log.SetReportCaller(true)
 }
-
-
 
 
 func main() {
@@ -113,14 +79,6 @@ func main() {
 		HttpOnly: true,
 	}
 
-    _, sess := GcpSessionCreate()
-    _, list := GcpListBuckets(sess)
-    _, listB := GcpListBuckets(sess)
-    log.Info(len(list))
-    log.Info(list)
-    log.Info(len(listB))
-    log.Info(listB)
-
     var wait time.Duration
     flag.DurationVar(&wait, "graceful-timeout", time.Second*30, "the duration for which the server gracefully wait for existing connections to finish")
     flag.Parse()
@@ -134,7 +92,7 @@ func main() {
     r.HandleFunc("/main/{bucket}", bucketHandler).Methods("GET")
     r.HandleFunc("/health", healthHandler).Methods("GET")
 
-    log.Info("Starting Server at port ", config.Port)
+    log.Info("Starting Server with host ",config.Host, " and port ", config.Port)
     srv := &http.Server{
         Addr: fmt.Sprintf("%s:%s", config.Host, config.Port),
         WriteTimeout: time.Second * 15,
@@ -144,7 +102,8 @@ func main() {
     }
 
     go func() {
-        if err := srv.ListenAndServe(); err != nil {
+        err := srv.ListenAndServe()
+        if err != nil {
             log.Error(err)
         }
     }()

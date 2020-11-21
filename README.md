@@ -23,8 +23,10 @@ The credentials provided need to allow:
 
 `GOOGLE_APPLICATION_CREDENTIALS` env variable with the path to the service account credentials in json format.
 This is only needed in case you provide access to GCP Storage Buckets.
+You need to install `Cloud Resource Manager API` and allow the service account to access the projects you want to be able to list buckets.
 
-The service account need to allow:
+
+The service account needs the following roles:
 - List
 - Get
 
