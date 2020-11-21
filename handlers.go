@@ -35,10 +35,10 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl.ExecuteTemplate(w, "login.tmpl", &templateData)
 }
 
+
 func authHandler(w http.ResponseWriter, r *http.Request) {
 	code := r.FormValue("code")
 
-    log.Trace("")
 	token, err := oauthConf.Exchange(oauth2.NoContext, code)
 	if err != nil {
 		log.Error(err)
@@ -46,14 +46,12 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    log.Trace("")
 	if !token.Valid() {
 		log.Error("Fail on Oauth authentication")
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
 
-    log.Trace("")
 	err, user := userInfoFromToken(token)
 	if err != nil || user.EmailVerified == false {
 		log.Error(err)
@@ -61,7 +59,6 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
         return
 	}
 
-    log.Trace("")
     isAllowed := checkUserAuth(user.Email)
     if isAllowed == false {
         log.Info("unauthorised user trying to access ", user.Email)
@@ -69,7 +66,6 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    log.Trace("")
 	session, _ := store.Get(r, sessionTokenName)
 	session.Values["oauth"] = token.AccessToken
 	err = session.Save(r, w)
@@ -79,18 +75,18 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    log.Trace("")
-    err, verifiedBucket := getVerifiedBucket(user.Email)
-    if err != nil || verifiedBucket == "" {
+    allowedBuckets := getListBucketUserMatching(getListBucketUserConfig(user.Email))
+    if len(allowedBuckets) == 0 {
         log.Error("No Buckets allowed for user ", user.Email)
         http.Redirect(w, r, "/login", http.StatusFound)
         return
     }
 
-    log.Trace("")
-    bucket := getFriendlyBucketName(verifiedBucket)
+    bucket := getFriendlyBucketName(allowedBuckets[0])
+    log.Trace(bucket)
     http.Redirect(w, r, "/main/"+bucket, http.StatusFound)
 }
+
 
 func bucketHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -101,19 +97,16 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    log.Trace("")
 	token := oauth2.Token{
 		AccessToken: fmt.Sprintf("%v", session.Values["oauth"]),
 	}
 
-    log.Trace("")
 	if !token.Valid() {
 		log.Error("Failure in Token Validation")
         http.Redirect(w, r, "/login", http.StatusFound)
         return
 	}
 
-    log.Trace("")
 	err, user := userInfoFromToken(&token)
 	if err != nil || user.EmailVerified == false {
 		log.Error(err)
@@ -121,10 +114,13 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
         return
 	}
 
-    log.Trace("")
-    allowedBuckets := getListBucketUser(user.Email)
+    allowedBuckets := getListBucketUserMatching(getListBucketUserConfig(user.Email))
+    if len(allowedBuckets) == 0 {
+        log.Error("No Buckets allowed for user ", user.Email)
+        http.Redirect(w, r, "/login", http.StatusFound)
+        return
+    }
 
-    log.Trace("")
     vars := mux.Vars(r)
     bucket := getRealBucketName(vars["bucket"])
     provider := getBucketProvider(bucket)
@@ -134,37 +130,21 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    log.Trace("")
     isAllowed := checkUserAuthBucket(user.Email, bucket)
     if isAllowed == false {
-        log.Info("unauthorised user trying to access", user.Email)
+        log.Info("unauthorised user trying to access ", user.Email)
         http.Redirect(w, r, "/login", http.StatusFound)
         return
     }
 
-    log.Trace("")
     object := r.URL.Query().Get("object")
     if object != "" {
 
         var presignUrl string
         if provider == "aws" {
-            err, sess := AwsSessionCreate()
-            if err != nil {
-                log.Error(err)
-                http.Redirect(w, r, "/login", http.StatusFound)
-                return
-            }
-
-            err, presignUrl = AwsS3PresignObjectGet(sess, bucket, object)
+            err, presignUrl = AwsS3PresignObjectGet(bucket, object)
         } else if provider == "gcp" {
-            err, client := GcpSessionCreate()
-            if err != nil {
-                log.Error(err)
-                http.Redirect(w, r, "/login", http.StatusFound)
-                return
-            }
-
-            err, presignUrl = GcpPresignObjectGet(client, bucket, object)
+            err, presignUrl = GcpPresignObjectGet(bucket, object)
         }
 
         if err != nil {
@@ -178,26 +158,11 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    log.Trace("")
     var objectsList []string
     if provider == "aws" {
-        err, sess := AwsSessionCreate()
-        if err != nil {
-            log.Error(err)
-            http.Redirect(w, r, "/login", http.StatusFound)
-            return
-        }
-
-        err, objectsList = AwsS3BucketList(sess, bucket)
+        err, objectsList = AwsS3ListObjects(bucket)
     } else if provider == "gcp" {
-        err, client := GcpSessionCreate()
-        if err != nil {
-            log.Error(err)
-            http.Redirect(w, r, "/login", http.StatusFound)
-            return
-        }
-
-        err, objectsList = GcpBucketList(client, bucket)
+        err, objectsList = GcpListObjects(bucket)
     }
 
     if err != nil {
@@ -206,7 +171,6 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    log.Trace("")
     friendlyBuckets := changeRealToFriendlyBuckets(allowedBuckets)
     tmpl := template.Must(template.ParseFiles("templates/bucket.tmpl"))
     log.Trace("")
@@ -221,6 +185,7 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
 
     tmpl.ExecuteTemplate(w, "bucket.tmpl", &templateData)
 }
+
 
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := store.Get(r, sessionTokenName)
@@ -241,6 +206,7 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	http.Redirect(w, r, "/login", http.StatusFound)
 }
+
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusOK)

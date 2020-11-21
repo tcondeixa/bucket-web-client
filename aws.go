@@ -8,23 +8,39 @@ import (
 	"time"
 )
 
-func AwsSessionCreate() (error, *session.Session) {
 
-	sess, err := session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	})
+func AwsS3ListBuckets() (error, []string) {
 
-	return err, sess
+    sess, err := session.NewSessionWithOptions(session.Options{
+        SharedConfigState: session.SharedConfigEnable,
+    })
+	svc := s3.New(sess)
+	req, err := svc.ListBuckets(nil)
+	if err != nil {
+		return err, nil
+	}
+
+    bucketsList := make([]string, len(req.Buckets))
+    for i, b := range req.Buckets {
+        bucketsList[i] = *b.Name
+    }
+
+	return err, bucketsList
 }
 
-func AwsS3BucketList(sess *session.Session, bucketName string) (error, []string) {
+
+func AwsS3ListObjects(bucketName string) (error, []string) {
 
 	var objectsList []string
 
+    sess, err := session.NewSessionWithOptions(session.Options{
+        SharedConfigState: session.SharedConfigEnable,
+    })
 	svc := s3.New(sess)
-	err := svc.ListObjectsPages(&s3.ListObjectsInput{
+
+	err = svc.ListObjectsV2Pages(&s3.ListObjectsV2Input{
 		Bucket: aws.String(bucketName),
-	}, func(p *s3.ListObjectsOutput, last bool) (shouldContinue bool) {
+	}, func(p *s3.ListObjectsV2Output, last bool) (shouldContinue bool) {
 	    objectsListPage := make([]string, len(p.Contents))
 		for i, obj := range p.Contents {
 			objectsListPage[i] = *obj.Key
@@ -39,8 +55,11 @@ func AwsS3BucketList(sess *session.Session, bucketName string) (error, []string)
 	return err, objectsList
 }
 
-func AwsS3PresignObjectGet(sess *session.Session, bucketName string, bucketKey string) (error, string) {
+func AwsS3PresignObjectGet(bucketName, bucketKey string) (error, string) {
 
+    sess, err := session.NewSessionWithOptions(session.Options{
+        SharedConfigState: session.SharedConfigEnable,
+    })
     svc := s3.New(sess)
 
     req, _ := svc.GetObjectRequest(&s3.GetObjectInput{
@@ -48,7 +67,7 @@ func AwsS3PresignObjectGet(sess *session.Session, bucketName string, bucketKey s
         Key:    aws.String(bucketKey),
     })
 
-    urlStr, err := req.Presign(15 * time.Minute)
+    urlStr, err := req.Presign(signUrlValidMin * time.Minute)
     if err != nil {
         return err, ""
     }
@@ -57,11 +76,14 @@ func AwsS3PresignObjectGet(sess *session.Session, bucketName string, bucketKey s
 
 }
 
-func AwsCheckBucketExist(sess *session.Session, bucketName string) (error, bool) {
+func AwsCheckBucketExist(bucketName string) (error, bool) {
 
+    sess, err := session.NewSessionWithOptions(session.Options{
+        SharedConfigState: session.SharedConfigEnable,
+    })
     svc := s3.New(sess)
 
-    _, err := svc.HeadBucket(&s3.HeadBucketInput{
+    _, err = svc.HeadBucket(&s3.HeadBucketInput{
         Bucket: aws.String(bucketName),
     })
 
@@ -78,12 +100,12 @@ func AwsCheckBucketExist(sess *session.Session, bucketName string) (error, bool)
 }
 
 
-func checkAllAwsBuckets(sess *session.Session, buckets []string) (error, []string) {
+func checkAllAwsBuckets(buckets []string) (error, []string) {
 
    var verifiedBuckets []string
    var bucketProblems error
    for _,bucket := range buckets {
-        err, exist := AwsCheckBucketExist(sess, bucket)
+        err, exist := AwsCheckBucketExist(bucket)
         if err != nil {
             bucketProblems = err
             continue
