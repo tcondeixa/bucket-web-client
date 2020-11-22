@@ -69,8 +69,9 @@ func TestRemoveDuplicateStrings(t *testing.T) {
 		input []string
 		want  []string
 	}{
-	    "test1": {input: []string{"first","second","third","second"}, want: []string{"first","second","third"}},
-	    "test2": {input: []string{"first","first","third","second"}, want: []string{"first","third","second"}},
+	    "duplicated_end": {input: []string{"first","second","third","second"}, want: []string{"first","second","third"}},
+	    "duplicated_begin": {input: []string{"first","first","third","second"}, want: []string{"first","third","second"}},
+	    "duplicated_multiple": {input: []string{"first","first","second","first"}, want: []string{"first","second"}},
 	}
 
 	for name, tc := range tests {
@@ -109,12 +110,12 @@ func TestGetListBucketUserConfig(t *testing.T) {
 		want1 []string
         want2 []string
 	}{
-	    "test1": {input: "myemail@domain.com", global: rules1, want1: []string{"^my-bucket-1$","bucket"}, want2: []string{"^my-bucket-2$","bucket"}},
-	    "test2": {input: "email@domain.com", global: rules1, want1: []string{}, want2: []string{}},
-	    "test3": {input: "", global: rules1, want1: []string{}, want2: []string{}},
-        "test4": {input: "myemail@domain.com", global: rules2, want1: []string{"^my-bucket-1$","bucket"}, want2: []string{"^my-bucket-2$","bucket"}},
-        "test5": {input: "email@domain.com", global: rules2, want1: []string{}, want2: []string{}},
-        "test6": {input: "", global: rules2, want1: []string{}, want2: []string{}},
+	    "existing_email": {input: "myemail@domain.com", global: rules1, want1: []string{"^my-bucket-1$","bucket"}, want2: []string{"^my-bucket-2$","bucket"}},
+	    "non_existing_email": {input: "email@domain.com", global: rules1, want1: []string{}, want2: []string{}},
+	    "empty_email": {input: "", global: rules1, want1: []string{}, want2: []string{}},
+        "existing_email_bad_bucket_regex": {input: "myemail@domain.com", global: rules2, want1: []string{"^my-bucket-1$","bucket"}, want2: []string{"^my-bucket-2$","bucket"}},
+        "non_existing_email_bad_bucket_regex": {input: "email@domain.com", global: rules2, want1: []string{}, want2: []string{}},
+        "empty_email_bad_bucket_regex": {input: "", global: rules2, want1: []string{}, want2: []string{}},
 	}
 
 	for name, tc := range tests {
@@ -142,10 +143,10 @@ func TestCheckUserAuth(t *testing.T) {
 		input string
 		want  bool
 	}{
-	    "test1": {input: "myemail@domain.com", want: true},
-	    "test2": {input: "otheremail@my.me", want: true},
-	    "test3": {input: "anyotheremail@domain.com", want: true},
-		"test4": {input: "fakemail@domain.me", want: false},
+	    "existing_email": {input: "myemail@domain.com", want: true},
+	    "regex_email": {input: "otheremail@my.me", want: true},
+	    "regex_domain_email": {input: "anyotheremail@domain.com", want: true},
+		"no_existing_email": {input: "fakemail@domain.me", want: false},
 	}
 
 	for name, tc := range tests {
@@ -221,8 +222,9 @@ func TestGetRealBucketName(t *testing.T) {
 		input string
 		want  string
 	}{
-		"test1": {input: "bucket1", want: "my-bucket-1"},
-		"test2": {input: "", want: ""},
+		"existing_name": {input: "bucket1", want: "my-bucket-1"},
+		"non_existing_name": {input: "other", want: "other"},
+		"empty_string": {input: "", want: ""},
 	}
 
 	for name, tc := range tests {
@@ -250,8 +252,9 @@ func TestGetFriendlyBucketName(t *testing.T) {
 		input string
 		want  string
 	}{
-		"test1": {input: "my-bucket-1", want: "bucket1"},
-		"test2": {input: "", want: ""},
+		"existing_name": {input: "my-bucket-1", want: "bucket1"},
+		"non_existing_name": {input: "my-other-1", want: "my-other-1"},
+		"empty_string": {input: "", want: ""},
 	}
 
 	for name, tc := range tests {
@@ -283,8 +286,8 @@ func TestChangeRealToFriendlyBuckets(t *testing.T) {
 		input []string
 		want  []string
 	}{
-		"test1": {input: []string{"my-bucket-1","my-bucket-2"}, want: []string{"bucket1","bucket2"}},
-		"test2": {input: []string{"",""}, want: []string{"",""}},
+		"existing_names": {input: []string{"my-bucket-1","my-bucket-2"}, want: []string{"bucket1","bucket2"}},
+		"empty_strings": {input: []string{"",""}, want: []string{"",""}},
 	}
 
 	for name, tc := range tests {
