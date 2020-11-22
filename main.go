@@ -80,7 +80,7 @@ func main() {
 	}
 
     var wait time.Duration
-    flag.DurationVar(&wait, "graceful-timeout", time.Second*30, "the duration for which the server gracefully wait for existing connections to finish")
+    flag.DurationVar(&wait, "graceful-timeout", time.Second*10, "the duration for which the server gracefully wait for existing connections to finish")
     flag.Parse()
 
     r := mux.NewRouter()
