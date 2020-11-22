@@ -1,5 +1,3 @@
-#!/bin/bash
-
 cover () {
   local t=$(mktemp -t cover)
   go test $COVERFLAGS -coverprofile=$t $@ \
