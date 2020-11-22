@@ -18,6 +18,7 @@ ALL `AWS_` env variables can be used to change configurations and credentials, s
 This is only needed in case you provide access to AWS S3 Buckets.
 
 The credentials provided need to allow:
+- ListAllMyBuckets
 - ListBucket
 - GetObject
 
@@ -27,8 +28,9 @@ You need to install `Cloud Resource Manager API` and allow the service account t
 
 
 The service account needs the following roles:
-- List
-- Get
+- List Projects
+- List Bucket
+- Get Bucket
 
 ### Environmental Variables:
 

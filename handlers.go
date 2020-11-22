@@ -82,7 +82,7 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    bucket := getFriendlyBucketName(allowedBuckets[0])
+    bucket := getFriendlyBucketName(allowedBuckets[0].Name)
     log.Trace(bucket)
     http.Redirect(w, r, "/main/"+bucket, http.StatusFound)
 }
@@ -114,22 +114,8 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
         return
 	}
 
-    allowedBuckets := getListBucketUserMatching(getListBucketUserConfig(user.Email))
-    if len(allowedBuckets) == 0 {
-        log.Error("No Buckets allowed for user ", user.Email)
-        http.Redirect(w, r, "/login", http.StatusFound)
-        return
-    }
-
     vars := mux.Vars(r)
     bucket := getRealBucketName(vars["bucket"])
-    provider := getBucketProvider(bucket)
-    if provider != "aws" && provider != "gcp" {
-        log.Error("Bucket does not belong to any provider")
-        http.Redirect(w, r, "/login", http.StatusFound)
-        return
-    }
-
     isAllowed := checkUserAuthBucket(user.Email, bucket)
     if isAllowed == false {
         log.Info("unauthorised user trying to access ", user.Email)
@@ -137,41 +123,40 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    object := r.URL.Query().Get("object")
-    if object != "" {
-
-        var presignUrl string
-        if provider == "aws" {
-            err, presignUrl = AwsS3PresignObjectGet(bucket, object)
-        } else if provider == "gcp" {
-            err, presignUrl = GcpPresignObjectGet(bucket, object)
-        }
-
-        if err != nil {
-            log.Error(err)
-            http.Redirect(w, r, "/login", http.StatusFound)
-            return
-        }
-
-        log.Trace("")
-        http.Redirect(w, r, presignUrl, http.StatusFound)
-        return
-    }
-
-    var objectsList []string
-    if provider == "aws" {
-        err, objectsList = AwsS3ListObjects(bucket)
-    } else if provider == "gcp" {
-        err, objectsList = GcpListObjects(bucket)
-    }
-
-    if err != nil {
-        log.Error(err)
+    allowedBuckets := getListBucketUserMatching(getListBucketUserConfig(user.Email))
+    if len(allowedBuckets) == 0 {
+        log.Error("No Buckets allowed for user ", user.Email)
         http.Redirect(w, r, "/login", http.StatusFound)
         return
     }
 
-    friendlyBuckets := changeRealToFriendlyBuckets(allowedBuckets)
+    object := r.URL.Query().Get("object")
+    if object != "" {
+
+        presignUrl := getSignedBucketUrl(allowedBuckets, bucket, object)
+        if presignUrl == "" {
+            log.Error("Empty signedURL")
+            http.Redirect(w, r, "/login", http.StatusFound)
+            return
+        }
+
+        http.Redirect(w, r, presignUrl, http.StatusFound)
+        return
+    }
+
+    objectsList := getBucketObjectsList(allowedBuckets, bucket)
+    if len(objectsList) == 0 {
+        log.Error("Empty Bucket Objects List")
+        http.Redirect(w, r, "/login", http.StatusFound)
+        return
+    }
+
+    allowedBucketsNames := make([]string, len(allowedBuckets))
+    for i,v := range allowedBuckets {
+        allowedBucketsNames[i] = v.Name
+    }
+
+    friendlyBuckets := changeRealToFriendlyBuckets(allowedBucketsNames)
     tmpl := template.Must(template.ParseFiles("templates/bucket.tmpl"))
     log.Trace("")
     templateData := replyObjects {

@@ -39,6 +39,12 @@ func sortAndValidateAuthRules (authRules []AuthRule) (error) {
 
     for _,rule := range authRules {
         sort.Strings(rule.Emails)
+        for _,r := range rule.Emails {
+            _, err := regexp.Compile(r)
+            if err != nil {
+                return err
+            }
+        }
 
         if len(rule.AwsBuckets) > 0 {
             sort.Strings(rule.AwsBuckets)
@@ -102,38 +108,6 @@ func getListBucketUserConfig(userEmail string) ([]string, []string) {
 
     return uniqueBucketsAws, uniqueBucketsGcp
 }
-
-func getBucketProvider(bucketName string) (string) {
-
-    for _,rule := range authRules.AuthRules {
-        for _,bucket := range rule.AwsBuckets {
-            found, err := regexp.MatchString(bucket, bucketName)
-            if err != nil {
-                log.Error(err)
-                continue
-            }
-
-            if found {
-                return "aws"
-            }
-        }
-
-        for _,bucket := range rule.GcpBuckets {
-            found, err := regexp.MatchString(bucket, bucketName)
-            if err != nil {
-                log.Error(err)
-                continue
-            }
-
-            if found {
-                return "gcp"
-            }
-        }
-    }
-
-    return "none"
-}
-
 
 func checkUserAuth(userEmail string) (bool) {
 
