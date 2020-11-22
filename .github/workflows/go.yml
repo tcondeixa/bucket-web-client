@@ -25,7 +25,10 @@ jobs:
       run: go get -v -t -d
 
     - name: Test
-      run: sh testing.sh
+      run: go test -v -coverprofile cover.out
+
+    - name: Cover
+      run: go tool cover -func=cover.out
 
     - name: Build
       run: go build -v -o app
