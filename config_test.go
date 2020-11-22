@@ -4,10 +4,13 @@ import (
 	"testing"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"io/ioutil"
+	 log "github.com/sirupsen/logrus"
 )
 
 
 func TestSortAndValidateAuthRules(t *testing.T) {
+    log.SetOutput(ioutil.Discard)
 
     rules1 := []AuthRule{
         AuthRule {
