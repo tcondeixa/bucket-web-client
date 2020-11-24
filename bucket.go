@@ -44,11 +44,9 @@ func getMatchedBucketUserAws (wg *sync.WaitGroup, matchBuckets *[]string, bucket
     log.Trace(*matchBuckets, bucketsAws)
     defer wg.Done()
 
-    err, allBuckets := AwsS3ListBuckets()
-    if err != nil {
-        log.Error(err)
-        return
-    }
+    semaphoreAws <- struct{}{}
+    allBuckets := awsListBuckets
+    <-semaphoreAws
 
     for _, bucketRemote := range allBuckets {
         for _, bucketLocal := range bucketsAws {
@@ -73,11 +71,9 @@ func getMatchedBucketUserGcp (wg *sync.WaitGroup, matchBuckets *[]string, bucket
     log.Trace(*matchBuckets, bucketsGcp)
     defer wg.Done()
 
-    err, allBuckets := GcpListBuckets()
-    if err != nil {
-        log.Error(err)
-        return
-    }
+    semaphoreGcp <- struct{}{}
+    allBuckets := gcpListBuckets
+    <-semaphoreGcp
 
     for _, bucketRemote := range allBuckets {
         for _, bucketLocal := range bucketsGcp {

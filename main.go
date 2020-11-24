@@ -24,6 +24,11 @@ var oauthConf *oauth2.Config
 var store *sessions.CookieStore
 var sessionTokenName string
 
+var awsListBuckets []string
+var gcpListBuckets []string
+var semaphoreAws chan struct{}
+var semaphoreGcp chan struct{}
+
 
 func logInit() {
 	log.SetFormatter(&log.JSONFormatter{
@@ -33,6 +38,42 @@ func logInit() {
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.InfoLevel)
 	log.SetReportCaller(true)
+}
+
+
+func getAllBuckets (done <-chan bool, ticker *time.Ticker) {
+
+    for {
+        select {
+        case <-done:
+            break
+        case t := <-ticker.C:
+            log.Trace(t)
+            err, allBuckets := AwsS3ListBuckets()
+            if err != nil {
+                log.Error(err)
+                continue
+            }
+
+            semaphoreAws <- struct{}{}
+            awsListBuckets = allBuckets
+            <-semaphoreAws
+            log.Info(allBuckets)
+
+            err, allBuckets = GcpListBuckets()
+            if err != nil {
+                log.Error(err)
+                continue
+            }
+
+            semaphoreGcp <- struct{}{}
+            gcpListBuckets = allBuckets
+            <-semaphoreGcp
+            log.Info(allBuckets)
+        }
+    }
+
+    log.Info("getAllBuckets stopped")
 }
 
 
@@ -79,6 +120,14 @@ func main() {
 		HttpOnly: true,
 	}
 
+	semaphoreGcp = make(chan struct{}, 1)
+	semaphoreAws = make(chan struct{}, 1)
+
+    // List Buckets
+    ticker := time.NewTicker(60 * time.Second)
+    done := make(chan bool)
+    go getAllBuckets(done, ticker)
+
     var wait time.Duration
     flag.DurationVar(&wait, "graceful-timeout", time.Second*10, "the duration for which the server gracefully wait for existing connections to finish")
     flag.Parse()
@@ -115,6 +164,10 @@ func main() {
     <-c
 
     // Create a deadline to wait for.
+    ticker.Stop()
+    done <- true
+
+
     ctx, cancel := context.WithTimeout(context.Background(), wait)
     defer cancel()
     srv.Shutdown(ctx)
