@@ -32,6 +32,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		"Link": url,
 		"Title": config.Title,
 	}
+
 	tmpl.ExecuteTemplate(w, "login.tmpl", &templateData)
 }
 
@@ -75,7 +76,8 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    allowedBuckets := getListBucketUserMatching(getListBucketUserConfig(user.Email))
+    userConfigBucketsAws,userConfigBucketsGcp := getListBucketUserConfig(user.Email)
+    allowedBuckets := getListBucketUserMatching(userConfigBucketsAws,userConfigBucketsGcp)
     if len(allowedBuckets) == 0 {
         log.Error("No Buckets allowed for user ", user.Email)
         http.Redirect(w, r, "/login", http.StatusFound)
@@ -84,6 +86,7 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 
     bucket := getFriendlyBucketName(allowedBuckets[0].Name)
     log.Trace(bucket)
+
     http.Redirect(w, r, "/main/"+bucket, http.StatusFound)
 }
 
@@ -123,7 +126,8 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    allowedBuckets := getListBucketUserMatching(getListBucketUserConfig(user.Email))
+    userConfigBucketsAws,userConfigBucketsGcp := getListBucketUserConfig(user.Email)
+    allowedBuckets := getListBucketUserMatching(userConfigBucketsAws,userConfigBucketsGcp)
     if len(allowedBuckets) == 0 {
         log.Error("No Buckets allowed for user ", user.Email)
         http.Redirect(w, r, "/login", http.StatusFound)
@@ -131,8 +135,8 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     object := r.URL.Query().Get("object")
+    // Case to open a Object Signed Url
     if object != "" {
-
         presignUrl := getSignedBucketUrl(allowedBuckets, bucket, object)
         if presignUrl == "" {
             log.Error("Empty signedURL")
@@ -144,6 +148,7 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    // Case to get the list of Bucket and Objects
     objectsList := getBucketObjectsList(allowedBuckets, bucket)
     if len(objectsList) == 0 {
         log.Error("Empty Bucket Objects List")
@@ -157,14 +162,15 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     friendlyBuckets := changeRealToFriendlyBuckets(allowedBucketsNames)
+    bucket = getFriendlyBucketName(bucket)
     tmpl := template.Must(template.ParseFiles("templates/bucket.tmpl"))
-    log.Trace("")
+    log.Trace(friendlyBuckets)
     templateData := replyObjects {
         Title: config.Title,
         Email: user.Email,
         Picture: user.Picture,
         Buckets: orderBuckets(bucket, friendlyBuckets),
-        Bucket: getFriendlyBucketName(bucket),
+        Bucket: bucket,
         Objects: objectsList,
     }
 
@@ -189,6 +195,7 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
+
 	http.Redirect(w, r, "/login", http.StatusFound)
 }
 
