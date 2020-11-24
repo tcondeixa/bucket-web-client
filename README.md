@@ -1,8 +1,8 @@
 # Bucket Web Client
 
-This project provides a web abstraction for the `list` and `get` methods for AWS S3 Buckets and GCP Storage Buckets. 
+This project provides a web abstraction for the `list` and `get` methods for AWS S3 Buckets and GCP Storage Buckets.
 
-Authentication is done using Google OAuth and the authorisation is defined in the configuration of the service. You are able to define the set of buckets that each user can access, based on bucket names and user emails addresses. 
+Authentication is done using Google OAuth and the authorisation is defined in the configuration of the service. You are able to define the set of buckets that each user can access, based on bucket names and user emails addresses.
 
 The service also provides the option to define user-friendly bucket names.
 
@@ -15,7 +15,7 @@ The service needs AWS IAM permissions to access the S3 buckets, and they will be
 2. Shared credentials file.
 3. IAM role.
 
-ALL `AWS_` env variables can be used to change configurations and credentials, such as region and profile. 
+ALL `AWS_` env variables can be used to change configurations and credentials, such as region and profile.
 This is only needed in case you provide access to AWS S3 Buckets.
 
 The credentials provided need to allow:
@@ -36,7 +36,7 @@ The service account needs the following roles:
 
 ### Environmental Variables:
 
-`LOG_LEVEL`: level of the logging output to stdout and stderr 
+`LOG_LEVEL`: level of the logging output to stdout and stderr
 [**trace**, **debug**, **info**, **warning**, **error**, **fatal**, **panic**].
 Defaults to info.
 
@@ -82,7 +82,7 @@ The `auth_rule` allow to define the permissions regarding buckets access to emai
 This field is mandatory, otherwise the user is always redirected to the login page.
 
 #### Regex `"auth_rules"`
-All fields on the `"auth_rules"` are processed as regex, so please be sure about the regex you chose. 
+All fields on the `"auth_rules"` are processed as regex, so please be sure about the regex you chose.
 You can test the regex [here](https://regoio.herokuapp.com/).
 More information you can find in the regexp package (http://golang.org/pkg/regexp/)
 
@@ -93,7 +93,7 @@ More information you can find in the regexp package (http://golang.org/pkg/regex
 - access all my bucket with a work `bucket`
 
 
-The `bucket_friendly_naming` defines more user-friendly names for buckets, so it ensures the translation in everything displayed to the end user. 
+The `bucket_friendly_naming` defines more user-friendly names for buckets, so it ensures the translation in everything displayed to the end user.
 This field is optional, so the default mode is to use the real bucket name.
 
 
