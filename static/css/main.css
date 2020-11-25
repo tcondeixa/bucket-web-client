@@ -32,6 +32,9 @@ img {
     width: auto;
     height: auto;
     margin: 2rem 2rem 2rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 h1 {
