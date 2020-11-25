@@ -41,42 +41,6 @@ func logInit() {
 }
 
 
-func getAllBuckets (done <-chan bool, ticker *time.Ticker) {
-
-    for {
-        select {
-        case <-done:
-            break
-        case t := <-ticker.C:
-            log.Trace(t)
-            err, allBuckets := AwsS3ListBuckets()
-            if err != nil {
-                log.Error(err)
-                continue
-            }
-
-            semaphoreAws <- struct{}{}
-            awsListBuckets = allBuckets
-            <-semaphoreAws
-            log.Info(allBuckets)
-
-            err, allBuckets = GcpListBuckets()
-            if err != nil {
-                log.Error(err)
-                continue
-            }
-
-            semaphoreGcp <- struct{}{}
-            gcpListBuckets = allBuckets
-            <-semaphoreGcp
-            log.Info(allBuckets)
-        }
-    }
-
-    log.Info("getAllBuckets stopped")
-}
-
-
 func main() {
 
 	logInit()
@@ -124,9 +88,23 @@ func main() {
 	semaphoreAws = make(chan struct{}, 1)
 
     // List Buckets
+    getAllBuckets ()
     ticker := time.NewTicker(60 * time.Second)
     done := make(chan bool)
-    go getAllBuckets(done, ticker)
+    go func() {
+        for {
+            select {
+            case <-done:
+                break
+            case t := <-ticker.C:
+                log.Trace(t)
+                getAllBuckets()
+            }
+        }
+
+        log.Info("getAllBuckets goroutine stopped")
+    } ()
+
 
     var wait time.Duration
     flag.DurationVar(&wait, "graceful-timeout", time.Second*10, "the duration for which the server gracefully wait for existing connections to finish")

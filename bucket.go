@@ -4,7 +4,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"sort"
 	"regexp"
-	"sync"
 	"time"
 )
 
@@ -39,10 +38,11 @@ func orderBuckets (selectBucket string, buckets []string) ([]string) {
 }
 
 
-func getMatchedBucketUserAws (wg *sync.WaitGroup, matchBuckets *[]string, bucketsAws []string) {
+func getMatchedBucketUserAws (bucketsAws []string) ([]string) {
 
-    log.Trace(*matchBuckets, bucketsAws)
-    defer wg.Done()
+    log.Trace(bucketsAws)
+
+    var matchBuckets []string
 
     semaphoreAws <- struct{}{}
     allBuckets := awsListBuckets
@@ -57,19 +57,21 @@ func getMatchedBucketUserAws (wg *sync.WaitGroup, matchBuckets *[]string, bucket
             }
 
             if found {
-                *matchBuckets = append(*matchBuckets, bucketRemote)
+                matchBuckets = append(matchBuckets, bucketRemote)
             }
         }
     }
 
-    log.Trace(*matchBuckets)
+    log.Trace(matchBuckets)
+    return matchBuckets
 }
 
 
-func getMatchedBucketUserGcp (wg *sync.WaitGroup, matchBuckets *[]string, bucketsGcp []string) {
+func getMatchedBucketUserGcp (bucketsGcp []string) ([]string) {
 
-    log.Trace(*matchBuckets, bucketsGcp)
-    defer wg.Done()
+    log.Trace(bucketsGcp)
+
+    var matchBuckets []string
 
     semaphoreGcp <- struct{}{}
     allBuckets := gcpListBuckets
@@ -84,12 +86,39 @@ func getMatchedBucketUserGcp (wg *sync.WaitGroup, matchBuckets *[]string, bucket
             }
 
             if found {
-                *matchBuckets = append(*matchBuckets, bucketRemote)
+                matchBuckets = append(matchBuckets, bucketRemote)
             }
         }
     }
 
-    log.Trace(*matchBuckets)
+    log.Trace(matchBuckets)
+    return matchBuckets
+}
+
+
+func getAllBuckets () {
+
+    err, allBuckets := AwsS3ListBuckets()
+    if err != nil {
+        log.Error(err)
+        return
+    }
+
+    semaphoreAws <- struct{}{}
+    awsListBuckets = allBuckets
+    <-semaphoreAws
+    log.Info(allBuckets)
+
+    err, allBuckets = GcpListBuckets()
+    if err != nil {
+        log.Error(err)
+        return
+    }
+
+    semaphoreGcp <- struct{}{}
+    gcpListBuckets = allBuckets
+    <-semaphoreGcp
+    log.Info(allBuckets)
 }
 
 
@@ -97,25 +126,20 @@ func getListBucketUserMatching (bucketsAws, bucketsGcp []string) ([]BucketInfo) 
 
     log.Trace(bucketsAws, bucketsGcp)
 
-    var wg sync.WaitGroup
     var matchAwsBuckets []string
     var matchGcpBuckets []string
 
     //ListBucketsAws
     if len(bucketsAws) > 0 {
-        wg.Add(1)
-        go getMatchedBucketUserAws(&wg, &matchAwsBuckets, bucketsAws)
+        matchAwsBuckets = getMatchedBucketUserAws(bucketsAws)
     }
 
     //ListBucketsGcp
     if len(bucketsGcp) > 0 {
-        wg.Add(1)
-        go getMatchedBucketUserGcp(&wg, &matchGcpBuckets, bucketsGcp)
+        matchGcpBuckets = getMatchedBucketUserGcp(bucketsGcp)
     }
 
-    wg.Wait()
     log.Trace(matchAwsBuckets, matchGcpBuckets)
-
     matchBuckets := make([]BucketInfo, len(matchAwsBuckets)+len(matchGcpBuckets))
     for i,name := range matchAwsBuckets {
         matchBuckets[i].Name = name
