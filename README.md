@@ -88,9 +88,9 @@ More information you can find in the regexp package (http://golang.org/pkg/regex
 
 *Some Regex Examples:*
 - access to a single user of the domain `^user.name@domain.com$`
-- access to all user of the domain `@mydomain.com$`
+- access to all users of the domain `@mydomain.com$`
 - access to a single bucket `^my-buclet-full-name$`
-- access all my bucket with a work `bucket`
+- access to all buckets with the word `bucket`
 
 
 The `bucket_friendly_naming` defines more user-friendly names for buckets, so it ensures the translation in everything displayed to the end user.
