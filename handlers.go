@@ -150,12 +150,6 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
 
     // Case to get the list of Bucket and Objects
     objectsList := getBucketObjectsList(allowedBuckets, bucket)
-    if len(objectsList) == 0 {
-        log.Error("Empty Bucket Objects List")
-        http.Redirect(w, r, "/login", http.StatusFound)
-        return
-    }
-
     allowedBucketsNames := make([]string, len(allowedBuckets))
     for i,v := range allowedBuckets {
         allowedBucketsNames[i] = v.Name
