@@ -1,3 +1,10 @@
+.centered {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+}
+
 button {
     background-color: #4CAF50;
     border: none;
@@ -8,9 +15,6 @@ button {
     display: inline-block;
     font-size: 16px;
     border-radius: 12px;
-    position: absolute;
-    top: 45%;
-    left: 42%;
 }
 
 
@@ -28,6 +32,9 @@ img {
     width: auto;
     height: auto;
     margin: 2rem 2rem 2rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 h1 {

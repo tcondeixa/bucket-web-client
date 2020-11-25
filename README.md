@@ -1,20 +1,21 @@
 # Bucket Web Client
 
-It provides a web abstraction for list and get methods for files in AWS S3 Buckets and GCP Storage Buckets. 
+This project provides a web abstraction for the `list` and `get` methods for AWS S3 Buckets and GCP Storage Buckets.
 
-The authentication is provided by the google Oauth and the authorisation is defined as a configuration of the service.
-The service allow you to define the set of buckets that each user can access, based on bucket names and user google emails. 
+Authentication is done using Google OAuth and the authorisation is defined in the configuration of the service. You are able to define the set of buckets that each user can access, based on bucket names and user emails addresses.
 
-The service also provides the option to define friendly bucket names to be displayed to the end user.
+The service also provides the option to define user-friendly bucket names.
 
 ## Configuration:
+
+### AWS
 
 The service needs AWS IAM permissions to access the S3 buckets, and they will be checked in the following order:
 1. Environmental variables.
 2. Shared credentials file.
 3. IAM role.
 
-ALL `AWS_` env variables can be used to change configurations and credentials, such as region and profile. 
+ALL `AWS_` env variables can be used to change configurations and credentials, such as region and profile.
 This is only needed in case you provide access to AWS S3 Buckets.
 
 The credentials provided need to allow:
@@ -22,10 +23,11 @@ The credentials provided need to allow:
 - ListBucket
 - GetObject
 
+### GCP
+
 `GOOGLE_APPLICATION_CREDENTIALS` env variable with the path to the service account credentials in json format.
 This is only needed in case you provide access to GCP Storage Buckets.
 You need to install `Cloud Resource Manager API` and allow the service account to access the projects you want to be able to list buckets.
-
 
 The service account needs the following roles:
 - List Projects
@@ -34,7 +36,7 @@ The service account needs the following roles:
 
 ### Environmental Variables:
 
-`LOG_LEVEL`: level of the logging output to stdout and stderr 
+`LOG_LEVEL`: level of the logging output to stdout and stderr
 [**trace**, **debug**, **info**, **warning**, **error**, **fatal**, **panic**].
 Defaults to info.
 
@@ -44,17 +46,17 @@ Defaults to info.
 
 `TITLE`: Title of the web page. Defaults to "Bucket Web Client".
 
-`CLIENT_ID`: Client ID from google Oauth integration. Mandatory.
+`CLIENT_ID`: Client ID from Google OAuth integration. Mandatory.
 
-`CLIENT_SECRET`: Client secret from google Oauth integration. Mandatory.
+`CLIENT_SECRET`: Client secret from Google OAuth integration. Mandatory.
 
-`REDIRECT_URL`: Oauth callback url. Mandatory.
+`REDIRECT_URL`: OAuth callback url. Mandatory.
 
 `AUTH_FILE`: The path to the json file with authorisation rules and bucket naming. Mandatory.
 
 
 ### Authorisation Rules and Bucket Naming:
-This is a configuration file in json format with the following schema:
+The configuration file in json format with the following schema:
 
 ```
 {
@@ -80,7 +82,7 @@ The `auth_rule` allow to define the permissions regarding buckets access to emai
 This field is mandatory, otherwise the user is always redirected to the login page.
 
 #### Regex `"auth_rules"`
-All fields on the `"auth_rules"` are processed as regex, so please be sure about the regex you chose. 
+All fields on the `"auth_rules"` are processed as regex, so please be sure about the regex you chose.
 You can test the regex [here](https://regoio.herokuapp.com/).
 More information you can find in the regexp package (http://golang.org/pkg/regexp/)
 
@@ -91,7 +93,7 @@ More information you can find in the regexp package (http://golang.org/pkg/regex
 - access to all buckets with the word `bucket`
 
 
-The `bucket_friendly_naming` define more friendly names for buckets, so it ensures a translation in everything displayed to the end user. 
+The `bucket_friendly_naming` defines more user-friendly names for buckets, so it ensures the translation in everything displayed to the end user.
 This field is optional, so the default mode is to use the real bucket name.
 
 
