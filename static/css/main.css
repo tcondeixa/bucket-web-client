@@ -69,7 +69,6 @@ img {
     height: auto;
     margin: 0rem 2rem 0rem 2rem;
     display: flex;
-    justify-content: space-between;
     align-items: center;
 }
 

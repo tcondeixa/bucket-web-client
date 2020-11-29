@@ -21,11 +21,13 @@ type replyObjects struct {
 	Bucket string
 	Objects []string
 	FilesPage []int
+	FilesOrder []string
 	Pages []int
 	CurrentPage int
 }
 
-var objectsPerPageOptions []int = []int{10, 25, 50, 100}
+var objectsPerPageOptions []int = []int{25, 50, 100}
+var objectsOrderOptions []string = []string{"aZ","zA"}
 
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -140,7 +142,9 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    object := r.URL.Query().Get("object")
+    queryParameters := r.URL.Query()
+
+    object := queryParameters.Get("object")
     // Case to open a Object Signed Url
     if object != "" {
         presignUrl := getSignedBucketUrl(allowedBuckets, bucket, object)
@@ -155,14 +159,19 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     // Case to get the list of Bucket and Objects
-    objectsList := getBucketObjectsList(allowedBuckets, bucket)
+    orderObjects := queryParameters.Get("orderObjects")
+    if orderObjects == "" {
+        orderObjects = objectsOrderOptions[0]
+    }
 
-    strFilesPage := r.URL.Query().Get("filesPage")
+    objectsList := getBucketObjectsList(allowedBuckets, bucket, orderObjects)
+
+    strFilesPage := queryParameters.Get("filesPage")
     if strFilesPage == "" {
         strFilesPage = strconv.Itoa(objectsPerPageOptions[0])
     }
 
-    strPage := r.URL.Query().Get("page")
+    strPage := queryParameters.Get("page")
     if strPage == "" {
         strPage = "1"
     }
@@ -194,6 +203,9 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
     } else {
         numPages = len(objectsList)/filesPage
     }
+
+    // List of Files Order
+    listFilesOrder := orderStringSlice(orderObjects, objectsOrderOptions)
 
     // List with Objects per Page
     listFilesPage := orderIntSlice(filesPage, objectsPerPageOptions)
@@ -230,6 +242,7 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
         Bucket: bucket,
         Objects: selectedObjectsList,
         FilesPage: listFilesPage,
+        FilesOrder: listFilesOrder,
         Pages: listPages,
         CurrentPage: page,
     }
