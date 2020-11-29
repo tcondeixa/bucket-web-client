@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"net/http"
 	"github.com/gorilla/mux"
+	"strconv"
 )
 
 
@@ -19,7 +20,12 @@ type replyObjects struct {
 	Buckets []string
 	Bucket string
 	Objects []string
+	FilesPage []int
+	Pages []int
+	CurrentPage int
 }
+
+var objectsPerPageOptions []int = []int{10, 25, 50, 100}
 
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -150,6 +156,62 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
 
     // Case to get the list of Bucket and Objects
     objectsList := getBucketObjectsList(allowedBuckets, bucket)
+
+    strFilesPage := r.URL.Query().Get("filesPage")
+    if strFilesPage == "" {
+        strFilesPage = strconv.Itoa(objectsPerPageOptions[0])
+    }
+
+    strPage := r.URL.Query().Get("page")
+    if strPage == "" {
+        strPage = "1"
+    }
+
+    filesPage, err := strconv.Atoi(strFilesPage)
+    if err != nil {
+        log.Error(err)
+        filesPage = objectsPerPageOptions[0]
+    }
+
+    page, err := strconv.Atoi(strPage)
+    if err != nil {
+        log.Error(err)
+        page = 1
+    }
+
+    if filesPage == 0 || page == 0 {
+        filesPage = objectsPerPageOptions[0]
+        page = 1
+    }
+
+    log.Debug(filesPage)
+    log.Debug(page)
+
+    // Calculate pages and objects to show
+    numPages := 1
+    if len(objectsList)%filesPage != 0 {
+        numPages = len(objectsList)/filesPage + 1
+    } else {
+        numPages = len(objectsList)/filesPage
+    }
+
+    // List with Objects per Page
+    listFilesPage := orderIntSlice(filesPage, objectsPerPageOptions)
+
+    // Select Objects to retrieve for current page
+    firstElement := (page-1)*filesPage
+    lastElement := (page*filesPage)
+    if lastElement > len(objectsList) {
+        lastElement = len(objectsList)
+    }
+    selectedObjectsList := objectsList[firstElement:lastElement]
+
+    // List with pages number 1,2,...
+    listPages := make([]int, numPages)
+    for i,_ := range listPages {
+        listPages[i] = i+1
+    }
+
     allowedBucketsNames := make([]string, len(allowedBuckets))
     for i,v := range allowedBuckets {
         allowedBucketsNames[i] = v.Name
@@ -157,15 +219,19 @@ func bucketHandler(w http.ResponseWriter, r *http.Request) {
 
     friendlyBuckets := changeRealToFriendlyBuckets(allowedBucketsNames)
     bucket = getFriendlyBucketName(bucket)
+
     tmpl := template.Must(template.ParseFiles("templates/bucket.tmpl"))
     log.Trace(friendlyBuckets)
     templateData := replyObjects {
         Title: config.Title,
         Email: user.Email,
         Picture: user.Picture,
-        Buckets: orderBuckets(bucket, friendlyBuckets),
+        Buckets: orderStringSlice(bucket, friendlyBuckets),
         Bucket: bucket,
-        Objects: objectsList,
+        Objects: selectedObjectsList,
+        FilesPage: listFilesPage,
+        Pages: listPages,
+        CurrentPage: page,
     }
 
     tmpl.ExecuteTemplate(w, "bucket.tmpl", &templateData)

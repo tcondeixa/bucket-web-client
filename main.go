@@ -84,12 +84,14 @@ func main() {
 		HttpOnly: true,
 	}
 
+    // Initialize all semaphores
 	semaphoreGcp = make(chan struct{}, 1)
 	semaphoreAws = make(chan struct{}, 1)
+	semaphoreCachedBucketObjects = make(chan struct{}, 1)
 
     // List Buckets
     getAllBuckets ()
-    ticker := time.NewTicker(60 * time.Second)
+    ticker := time.NewTicker(time.Duration(config.TimeoutCache) * time.Second)
     done := make(chan bool)
     go func() {
         for {

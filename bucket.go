@@ -15,26 +15,49 @@ type BucketInfo struct {
 var signUrlValidMin time.Duration = 15
 
 
-func orderBuckets (selectBucket string, buckets []string) ([]string) {
+func orderStringSlice (selectElement string, elements []string) ([]string) {
 
-    log.Trace(selectBucket, buckets)
+    log.Trace(selectElement, elements)
 
-    // Order bucket slice but having the selected bucket in the first position
-    selectedBucketPos := 0
-    firstBucketValue := buckets[0]
-    for index, bucket := range buckets {
-        if bucket == selectBucket {
-            selectedBucketPos = index
+    // Order slice but having the selected element in the first position
+    selectElementPos := 0
+    firstBucketValue := elements[0]
+    for index, bucket := range elements {
+        if bucket == selectElement {
+            selectElementPos = index
             break
         }
     }
-    buckets[0] = selectBucket
-    buckets[selectedBucketPos] = firstBucketValue
-    sort.Strings(buckets[1:])
+    elements[0] = selectElement
+    elements[selectElementPos] = firstBucketValue
+    sort.Strings(elements[1:])
 
-    log.Trace(buckets)
+    log.Trace(elements)
 
-    return buckets
+    return elements
+}
+
+
+func orderIntSlice (selectElement int, elements []int) ([]int) {
+
+    log.Trace(selectElement, elements)
+
+    // Order slice but having the selected element in the first position
+    selectElementPos := 0
+    firstBucketValue := elements[0]
+    for index, bucket := range elements {
+        if bucket == selectElement {
+            selectElementPos = index
+            break
+        }
+    }
+    elements[0] = selectElement
+    elements[selectElementPos] = firstBucketValue
+    sort.Ints(elements[1:])
+
+    log.Trace(elements)
+
+    return elements
 }
 
 
@@ -199,31 +222,14 @@ func getBucketObjectsList (bucketList []BucketInfo, bucket string) ([]string) {
     log.Trace(bucketList, bucket)
 
     var objectsList []string
-    var err error
 
     for _,b := range bucketList {
         if b.Name == bucket {
-            if b.Provider == "aws" {
-                err, objectsList = AwsS3ListObjects(bucket)
-                if err != nil {
-                    log.Error(err)
-                    return objectsList
-                }
-
-            } else if b.Provider == "gcp" {
-                err, objectsList = GcpListObjects(bucket)
-                if err != nil {
-                    log.Error(err)
-                    return objectsList
-                }
-
-            } else {
-                log.Error("unknown provider to get bucket list ", b.Provider, b.Name)
-                return objectsList
-            }
+            objectsList = getBucketObjectsCache(bucket,b.Provider)
         }
     }
 
+    sort.Sort(sort.Reverse(sort.StringSlice(objectsList)))
     log.Trace(objectsList)
     return objectsList
 }

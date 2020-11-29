@@ -40,19 +40,21 @@ The service account needs the following roles:
 [**trace**, **debug**, **info**, **warning**, **error**, **fatal**, **panic**].
 Defaults to info.
 
-`HOST`: Address to be used by the App. Defaults to "0.0.0.0".
+`BWC_HOST`: Address to be used by the App. Defaults to "0.0.0.0".
 
-`PORT`: Port to be used by the App. Defaults to "8080".
+`BWC_PORT`: Port to be used by the App. Defaults to "8080".
 
-`TITLE`: Title of the web page. Defaults to "Bucket Web Client".
+`BWC_TITLE`: Title of the web page. Defaults to "Bucket Web Client".
 
-`CLIENT_ID`: Client ID from Google OAuth integration. Mandatory.
+`BWC_CLIENT_ID`: Client ID from Google OAuth integration. Mandatory.
 
-`CLIENT_SECRET`: Client secret from Google OAuth integration. Mandatory.
+`BWC_CLIENT_SECRET`: Client secret from Google OAuth integration. Mandatory.
 
-`REDIRECT_URL`: OAuth callback url. Mandatory.
+`BWC_REDIRECT_URL`: OAuth callback url. Mandatory.
 
-`AUTH_FILE`: The path to the json file with authorisation rules and bucket naming. Mandatory.
+`BWC_AUTH_FILE`: The path to the json file with authorisation rules and bucket naming. Mandatory.
+
+`BWC_TIMEOUT_CACHE`: The cache timeout in seconds to list again buckets and objects. Defaults to 60.
 
 
 ### Authorisation Rules and Bucket Naming:
