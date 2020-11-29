@@ -9,7 +9,7 @@ import (
 )
 
 
-func TestOrderBuckets(t *testing.T) {
+func TestOrderStringSlice(t *testing.T) {
     log.SetOutput(ioutil.Discard)
 
 	tests := map[string]struct {
@@ -22,7 +22,7 @@ func TestOrderBuckets(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := orderBuckets(tc.input1, tc.input2)
+			got := orderStringSlice(tc.input1, tc.input2)
 			diff := cmp.Diff(tc.want, got)
 			if diff != "" {
 				t.Fatalf(string(diff))

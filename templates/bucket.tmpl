@@ -6,7 +6,7 @@
     <meta name="description" content="List and Download Bucket Objects">
     <meta name="keywords" content="aws, gcp, bucket">
     <meta name="author" content="Tiago Condeixa">
-    <link rel="stylesheet" href="/css/main.css?v=v0.7">
+    <link rel="stylesheet" href="/css/main.css?v=v0.8">
 </head>
 <body>
     <div class="welcome">
@@ -20,24 +20,43 @@
         </h1>
     </div>
 
-    <aside>
+    <div class="blocks">
         <form>
-            <select onchange="setBucket()" class="bucket-picker" id="bucket">
+            <h1><p>Bucket</p></h1>
+            <select onchange="setProperties()" class="bucket-picker" id="bucket">
                 {{ range .Buckets }}
                     <option>{{ . }}</option>
                 {{ end }}
             </select>
         </form>
-    </aside>
+        <form>
+            <h1><p>Objects per Page</p></h1>
+            <select onchange="setProperties()" class="bucket-picker" id="filesPage">
+              {{ range .FilesPage }}
+                <option>{{ . }}</option>
+              {{ end }}
+            </select>
+        </form>
+    </div>
     <section>
         {{$bucket := .Bucket}}
         {{ range .Objects }}
         <p style="font-size:12px"><a href="/main/{{ $bucket }}?object={{ . }}" target="_blank">{{ . }}</a></p>
         {{ end }}
     </section>
+    <div class="pagination">
+        {{$current := .CurrentPage}}
+        {{ range .Pages }}
+            {{ if eq . $current }}
+                <button type="button" class="pageactive" onclick="setProperties({{ . }})">{{ . }}</button>
+            {{ else }}
+                <button type="button" class="page" onclick="setProperties({{ . }})">{{ . }}</button>
+            {{ end }}
+        {{ end }}
+    </div>
 <footer>
-    <small>Bucket Web Client made by Tiago Condeixa <a href="https://github.com/tcondeixa/bucket-web-client">github</a></small>
+    <small>Bucket Web Client v0.8 made by Tiago Condeixa <a href="https://github.com/tcondeixa/bucket-web-client">github</a></small>
 </footer>
-<script type="text/javascript" src="/js/main.js?v=v0.7"></script>
+<script type="text/javascript" src="/js/main.js?v=v0.8"></script>
 </body>
 </html>

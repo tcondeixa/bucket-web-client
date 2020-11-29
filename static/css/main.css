@@ -17,6 +17,33 @@ button {
     border-radius: 12px;
 }
 
+button:focus{
+    background:#336600;
+}
+
+button.page {
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    padding: 10px 12px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 12px;
+    border-radius: 12px;
+}
+
+button.pageactive {
+    background-color: #336600;
+    border: none;
+    color: white;
+    padding: 10px 12px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 12px;
+    border-radius: 12px;
+}
 
 body {
     font-family: "Lucida Grande", sans-serif;
@@ -37,6 +64,22 @@ img {
     align-items: center;
 }
 
+.blocks {
+    width: auto;
+    height: auto;
+    margin: 0rem 2rem 0rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pagination {
+    width: auto;
+    height: auto;
+    margin: 0rem 0rem 0rem 2rem;
+    align-items: center;
+}
+
 h1 {
     display: inline-block;
     color: #4CAF50;
@@ -52,6 +95,7 @@ section {
     height: auto;
     margin-left: 2rem;
     margin-right: 2rem;
+    margin-top: 0rem;
     margin-bottom: 5rem;
     background-color: #111111;
     border: 1px solid grey;
@@ -60,7 +104,6 @@ section {
 .bucket-picker {
     font-family: "Lucida Grande", sans-serif;
     font-size: 1rem;
-    margin-left: 2rem;
 }
 
 p {

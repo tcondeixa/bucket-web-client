@@ -7,15 +7,16 @@ import (
 )
 
 type EnvVars struct {
-	Host			string `default:"0.0.0.0" envconfig:"HOST"`
-	Port			string `default:"8080" envconfig:"PORT"`
-	Log     		string `default:"Info"  envconfig:"LOG_LEVEL"`
-	Title	        string `default:"Bucket Web Client" envconfig:"TITLE"`
-	ClientID    	string `required:"true" envconfig:"CLIENT_ID"`
-	ClientSecret	string `required:"true" envconfig:"CLIENT_SECRET"`
-	RedirectURL     string `required:"true" envconfig:"REDIRECT_URL"`
-	AuthFile        string `required:"true" envconfig:"AUTH_FILE"`
-	GoogleFile      string `default:"" envconfig:"GOOGLE_APPLICATION_CREDENTIALS"`
+	Host			string `default:"0.0.0.0" envconfig:"BWC_HOST"`
+	Port			string `default:"8080" envconfig:"BWC_PORT"`
+	Log     		string `default:"Info"  envconfig:"BWC_LOG_LEVEL"`
+	Title	        string `default:"Bucket Web Client" envconfig:"BWC_TITLE"`
+	ClientID    	string `required:"true" envconfig:"BWC_CLIENT_ID"`
+	ClientSecret	string `required:"true" envconfig:"BWC_CLIENT_SECRET"`
+	RedirectURL     string `required:"true" envconfig:"BWC_REDIRECT_URL"`
+	AuthFile        string `required:"true" envconfig:"BWC_AUTH_FILE"`
+	GoogleFile      string `default:"" envconfig:"BWC_GOOGLE_APPLICATION_CREDENTIALS"`
+	TimeoutCache    int64  `default:"60" envconfig:"BWC_TIMEOUT_CACHE"`
 }
 
 type AuthRules struct {

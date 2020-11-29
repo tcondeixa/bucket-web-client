@@ -1,6 +1,6 @@
 #!/bin/bash -xe
 
-VERSION=v0.7
+VERSION=v0.8
 ACCOUNT=tscondeixa
 REPO=bucket-web-client
 
