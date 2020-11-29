@@ -217,7 +217,7 @@ func getSignedBucketUrl (bucketList []BucketInfo, bucket, object string) (string
     return ""
 }
 
-func getBucketObjectsList (bucketList []BucketInfo, bucket string) ([]string) {
+func getBucketObjectsList (bucketList []BucketInfo, bucket string, order string) ([]string) {
 
     log.Trace(bucketList, bucket)
 
@@ -229,7 +229,10 @@ func getBucketObjectsList (bucketList []BucketInfo, bucket string) ([]string) {
         }
     }
 
-    sort.Sort(sort.Reverse(sort.StringSlice(objectsList)))
+    if order == "zA" {
+        sort.Sort(sort.Reverse(sort.StringSlice(objectsList)))
+    }
+
     log.Trace(objectsList)
     return objectsList
 }

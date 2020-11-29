@@ -30,6 +30,14 @@
             </select>
         </form>
         <form>
+            <h1><p>Order</p></h1>
+            <select onchange="setProperties()" class="bucket-picker" id="filesOrder">
+                {{ range .FilesOrder }}
+                    <option>{{ . }}</option>
+                {{ end }}
+            </select>
+        </form>
+        <form>
             <h1><p>Objects per Page</p></h1>
             <select onchange="setProperties()" class="bucket-picker" id="filesPage">
               {{ range .FilesPage }}
